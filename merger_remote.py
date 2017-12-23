@@ -1,0 +1,705 @@
+from numpy import *
+import numpy as np
+import time
+import os
+from os.path import *
+from os import fsync
+# import harm_script as h
+# import glob
+# import sys
+from reader import *
+
+"""
+this file was created specifically for remote processing of extensively large dumps outputs on a cluster. 
+the challenge here is to get without plotting and ipython libraries; some of the procedures are cloned from harm_script
+"""
+
+def get_sorted_file_list(prefix="dump"):
+    flist0 = np.sort(glob.glob( os.path.join("dumps/", "%s[0-9][0-9][0-9]"%prefix) ) )
+    flist1 = np.sort(glob.glob( os.path.join("dumps/", "%s[0-9][0-9][0-9][0-9]"%prefix) ) )
+    flist2 = np.sort(glob.glob( os.path.join("dumps/", "%s[0-9][0-9][0-9][0-9][0-9]"%prefix) ) )
+    flist0.sort()
+    flist1.sort()
+    flist2.sort()
+    flist = np.concatenate((flist0,flist1,flist2))
+    return flist
+    
+
+def faraday():
+    global omegaf1, omegaf2
+    if 'omegaf1' in globals():
+        del omegaf1
+    if 'omemaf2' in globals():
+        del omegaf2
+    omegaf1=fFdd(0,1)/fFdd(1,3)
+    omegaf2=fFdd(0,2)/fFdd(2,3)
+
+def Tcalcud():
+    global Tud, TudEM, TudMA
+    global mu, sigma
+    global enth
+    global unb, isunbound
+    pg = (gam-1)*ug
+    w=rho+ug+pg
+    eta=w+bsq
+    if 'Tud' in globals():
+        del Tud
+    if 'TudMA' in globals():
+        del TudMA
+    if 'TudEM' in globals():
+        del TudEM
+    if 'mu' in globals():
+        del mu
+    if 'sigma' in globals():
+        del sigma
+    if 'unb' in globals():
+        del unb
+    if 'isunbound' in globals():
+        del isunbound
+    Tud = np.zeros((4,4,nx,ny,nz),dtype=np.float32,order='F')
+    TudMA = np.zeros((4,4,nx,ny,nz),dtype=np.float32,order='F')
+    TudEM = np.zeros((4,4,nx,ny,nz),dtype=np.float32,order='F')
+    for kapa in np.arange(4):
+        for nu in np.arange(4):
+            if(kapa==nu): delta = 1
+            else: delta = 0
+            TudEM[kapa,nu] = bsq*uu[kapa]*ud[nu] + 0.5*bsq*delta - bu[kapa]*bd[nu]
+            TudMA[kapa,nu] = w*uu[kapa]*ud[nu]+pg*delta
+            #Tud[kapa,nu] = eta*uu[kapa]*ud[nu]+(pg+0.5*bsq)*delta-bu[kapa]*bd[nu]
+            Tud[kapa,nu] = TudEM[kapa,nu] + TudMA[kapa,nu]
+    mu = -Tud[1,0]/(rho*uu[1])
+    sigma = TudEM[1,0]/TudMA[1,0]
+    enth=1+ug*gam/rho
+    unb=enth*ud[0]
+    isunbound=(-unb>1.0)
+#############################################################
+# tetrad covariant components... and all the grid parameters should be set as well
+# on my laptop, the description is in ~/Arts/illum/frominside.tex
+def tetrad_t(uumean, udmean):
+    return -udmean[0]/drdx[0,0], -udmean[1]/drdx[1,1], 0.*udmean[0]/drdx[2,2], -udmean[3]/drdx[3,3]
+
+def tetrad_r(uumean, udmean):
+    gg=guu[0,3]**2-guu[0,0]*guu[3,3] #1.+uumean[3]*udmean[3]
+    hh=guu[3,3]+uumean[3]*uumean[3]
+    s=sqrt(fabs(gg*hh*guu[1,1]))
+    return guu[3,3]*uumean[1]/s/drdx[0,0], gg*udmean[0]/s/drdx[1,1], 0.*uumean[0]/drdx[2,2], -guu[0,3]*uumean[1]/s/drdx[3,3]
+
+def tetrad_h(uumean, udmean):
+    return 0.*uumean[0]/drdx[0,0], 0.*uumean[0]/drdx[1,1], sqrt(gdd[2,2])/drdx[2,2], 0.*uumean[0]/drdx[3,3]
+
+def tetrad_p(uumean, udmean):
+    hh=sqrt(guu[3,3]+uumean[3]*uumean[3])
+    return uumean[3]*udmean[0]/hh/drdx[0,0], uumean[3]*udmean[1]/hh/drdx[1,1], 0.*uumean[0]/drdx[2,2], (1.+uumean[3]*udmean[3])/hh/drdx[3,3]
+
+# outputting all the basic information about the dump to a file
+def dumpinfo(prefix):
+    
+    rg("gdump")
+    rd(prefix)
+    fout=open(prefix+"_dinfo.dat", "w")
+
+    fout.write(str(nx)+" "+str(ny)+" "+str(nz)+"\n")
+    print "nr x ntheta x nphi = "+str(nx)+" "+str(ny)+" "+str(nz)
+    
+    fout.write(str(a)+"\n")
+    print "Kerr parameter a = "+str(a)
+
+    fout.write(str(t)+"\n")
+    print "time "+str(t)
+    fout.close()
+
+# calculated and writes out evolution of some global parameters; rref is the radius at which the mass and momentum flows are calculated
+def glevol(nmax, rref):
+#    global rho, uu
+   # rg("gdump")
+
+    # rref is reference radius
+    run=unique(r)
+    nr=run[where(run<rref)].argmax()
+
+#    maccre=zeros(nmax, dtype=double)
+
+    fmdot=open("merge_mevol"+str(rref)+".dat", "w")
+
+    for k in arange(nmax):
+        fname=dumpname(k)
+	print "reading "+str(fname)
+        rd(fname)
+	print "rho is "+str(shape(rho))
+        #        Tcalcud()
+        # accretion rate at rref
+	rhom=rho.mean(axis=2)
+	uum=uu.mean(axis=3)
+        # do we need to multiply this by drdx??
+        #        uum[0]=(uu[0]*drdx[0,0]).mean(axis=3) ;    uum[1]=(uu[1]*drdx[1,1]).mean(axis=3)
+        #        uum[2]=(uu[2]*drdx[2,2]).mean(axis=3) ;    uum[2]=(uu[2]*drdx[2,2]).mean(axis=3)
+	maccre=-trapz((rhom*uum[1]*(uum[1]<0.)*sqrt(gdet/gcov[1,1]))[nr,:], x=h[nr,:,0])*_dx2*_dx3
+        mwind=-trapz((rhom*uum[1]*(uum[1]>0.)*sqrt(gdet/gcov[1,1]))[nr,:], x=h[nr,:,0])*_dx2*_dx3
+        laccre=-trapz((rho*fabs(ud[3]/ud[0])*uu[1]*(uu[1]<0.)*sqrt(gdet/gcov[1,1]))[nr,:], x=h[nr,:,0])*_dx2*_dx3
+	lwind=-trapz((rho*fabs(ud[3]/ud[0])*uu[1]*(uu[1]>0.)*sqrt(gdet/gcov[1,1]))[nr,:], x=h[nr,:,0])*_dx2*_dx3
+        # maccre=-((rho*uu[1]*sqrt(gdet/gcov[1,1]))[nr,:,:]).sum()*_dx2*_dx3
+        fmdot.write(str(t)+" "+str(maccre)+" "+str(mwind)+" "+str(laccre/maccre)+" "+str(lwind/mwind)+"\n")
+    
+    fmdot.close()
+
+# makes a dump-file name from its number
+# probably, could be done in one line...
+def dumpname(n):
+    s=str(n)
+    if(n>0):
+        ls=int(floor(log10(double(n))))
+    else:
+        ls=0
+    if(ls<2):
+        s='0'*(2-ls)+s
+    s='dump'+s
+    return s
+
+def mint(rref):
+    print "mint:"
+    print "shape(rho) = "+str(shape(rho))
+    print "shape(uu1) = "+str(shape(uu[1]))
+    print "shape gdet = "+str(shape(gdet))
+    hun=unique(h)
+    run=unique(r)
+    nr=run[where(run<rref)].argmax()
+    indd=squeeze((rho*uu[1]*(uu[1]<0.)*sqrt(gdet/gcov[1,1]))[nr,:,:])
+    maccre=-trapz((indd).mean(axis=-1), x=hun)*_dx2*_dx3
+    indd=squeeze((rho*uu[1]*(uu[1]>0.)*sqrt(gdet/gcov[1,1]))[nr,:,:])
+    mwind=trapz((indd).mean(axis=-1), x=hun)*_dx2*_dx3
+    indd=squeeze((rho*uu[1]*(uu[1]<0.)*fabs(ud[3]/drdx[3,3])*sqrt(gdet/gcov[1,1]))[nr,:,:])
+    laccre=-trapz((indd).mean(axis=-1), x=hun)*_dx2*_dx3
+    indd=squeeze((rho*uu[1]*(uu[1]>0.)*fabs(ud[3]/drdx[3,3])*sqrt(gdet/gcov[1,1]))[nr,:,:])
+    lwind=-trapz((indd).mean(axis=-1), x=hun)*_dx2*_dx3
+
+    return maccre, mwind, laccre/maccre, lwind/mwind
+
+def readndump(n1, n2, rref=5.0):
+
+#    run=unique(r)
+#    nr=run[where(run<rref)].argmax()
+
+    rg("gdump")
+
+    if (n2<n1):
+        print("readndump: invalid file number range")
+        exit()
+
+    fmdot=open("merge_mevol"+str(rref)+".dat", "w")
+
+    nframes=n2-n1+1
+    n=n1+arange(nframes)
+
+    for k in n:
+        fname=dumpname(k)
+        rd(fname)
+        #        print(shape(rho))
+        Tcalcud()
+#	rhoaver=rho
+	p=(gam-1.)*ug
+	magp=bsq/2.
+#        if(pflag):
+#            uaver=(gam-1.)*ug
+#	    if(withmag):
+#	    	uaver+=bsq/2.
+#        else:
+#            uaver=rho
+        if(k==n1):
+            rhomean=rho
+            rhosqmean=rho**2
+            # velocity components:
+            uu0=uu[0]*rho ; ud0=ud[0]*rho
+            uur=uu[1]*rho ; udr=ud[1]*rho
+            uuh=uu[2]*rho ; udh=ud[2]*rho
+            uup=uu[3]*rho ; udp=ud[3]*rho
+            puu0=uu[0]*p ; pud0=ud[0]*p
+            puur=uu[1]*p ; pudr=ud[1]*p
+            puuh=uu[2]*p ; pudh=ud[2]*p
+            puup=uu[3]*p ; pudp=ud[3]*p
+            mpuu0=uu[0]*magp ; mpud0=ud[0]*magp
+            mpuur=uu[1]*magp ; mpudr=ud[1]*magp
+            mpuuh=uu[2]*magp ; mpudh=ud[2]*magp
+            mpuup=uu[3]*magp ; mpudp=ud[3]*magp
+
+            tudem=TudEM ; tudma=TudMA
+            pmean=(gam-1.)*ug
+	   # unorm=uaver
+	    magp_mean=magp
+	    aphi=psicalc()
+        else:
+            rhomean+=rho
+            rhosqmean+=rho**2
+            # velocity components:
+            uu0+=uu[0]*rho ; ud0+=ud[0]*rho
+            uur+=uu[1]*rho ; udr+=ud[1]*rho
+            uuh+=uu[2]*rho ; udh+=ud[2]*rho
+            uup+=uu[3]*rho ; udp+=ud[3]*rho
+            puu0+=uu[0]*p ; pud0+=ud[0]*p
+            puur+=uu[1]*p ; pudr+=ud[1]*p
+            puuh+=uu[2]*p ; pudh+=ud[2]*p
+            puup+=uu[3]*p ; pudp+=ud[3]*p
+            mpuu0+=uu[0]*magp ; mpud0+=ud[0]*magp
+            mpuur+=uu[1]*magp ; mpudr+=ud[1]*magp
+            mpuuh+=uu[2]*magp ; mpudh+=ud[2]*magp
+            mpuup+=uu[3]*magp ; mpudp+=ud[3]*magp
+
+            pmean+=(gam-1.)*ug
+	    magp_mean+=magp
+	    aphi+=psicalc()
+#	    unorm+=uaver
+	    tudem+=TudEM ; tudma+=TudMA
+	# mass accretion rate estimate
+#        uum=uu.mean(axis=3)
+
+#        rhom=rho.mean(axis=2)
+#        uum=uu.mean(axis=3)
+#        maccre=-trapz(((rho*uu[1]*(uu[1]<0.)*sqrt(gdet/gcov[1,1]))[nr,:]).mean(axis=1), x=h[nr,:,0])*_dx2*_dx3
+#        mwind=trapz(((rho*uu[1]*(uu[1]>0.)*sqrt(gdet/gcov[1,1]))[nr,:]).mean(axis=1), x=h[nr,:,0])*_dx2*_dx3
+#        laccre=-trapz(((rho*fabs(ud[3])*uu[1]*(uu[1]<0.)*sqrt(gdet/gcov[1,1]))[nr,:]).mean(axis=1), x=h[nr,:,0])*_dx2*_dx3
+#        lwind=-trapz(((rho*fabs(ud[3])*uu[1]*(uu[1]>0.)*sqrt(gdet/gcov[1,1]))[nr,:]).mean(axis=1), x=h[nr,:,0])*_dx2*_dx3
+        # maccre=-((rho*uu[1]*sqrt(gdet/gcov[1,1]))[nr,:,:]).sum()*_dx2*_dx3
+	maccre, mwind, laccre, lwind = mint(rref)
+        fmdot.write(str(t)+" "+str(maccre)+" "+str(mwind)+" "+str(laccre/maccre)+" "+str(lwind/mwind)+"\n")
+    fmdot.close()
+    # velocity normalization:
+    uu0*=drdx[0,0]/rhomean ; uur*=drdx[1,1]/rhomean ; uuh*=drdx[2,2]/rhomean ; uup*=drdx[3,3]/rhomean
+    ud0/=drdx[0,0]*rhomean ; udr/=drdx[1,1]*rhomean ; udh/=drdx[2,2]*rhomean ; udp/=drdx[3,3]*rhomean
+    puu0*=drdx[0,0]/pmean ; puur*=drdx[1,1]/pmean ; puuh*=drdx[2,2]/pmean ; puup*=drdx[3,3]/pmean
+    pud0/=drdx[0,0]*pmean ; pudr/=drdx[1,1]*pmean ; pudh/=drdx[2,2]*pmean ; pudp/=drdx[3,3]*pmean
+    mpuu0*=drdx[0,0]/magp_mean ; mpuur*=drdx[1,1]/magp_mean ; mpuuh*=drdx[2,2]/magp_mean ; mpuup*=drdx[3,3]/magp_mean
+    mpud0/=drdx[0,0]*magp_mean ; mpudr/=drdx[1,1]*magp_mean ; mpudh/=drdx[2,2]*magp_mean ; mpudp/=drdx[3,3]*magp_mean
+
+#    uu0/=unorm ; uur/=unorm ; uuh/=unorm ; uup/=unorm
+#    ud0/=unorm ; udr/=unorm ; udh/=unorm ; udp/=unorm
+    # averaging the density:
+    rhomean=rhomean/double(nframes)
+    rhodisp=rhosqmean/double(nframes)-rhomean**2
+    pmean=pmean/double(nframes)
+    magp_mean=magp_mean/double(nframes)
+    tudem/=double(nframes) ; tudma/=double(nframes)
+    aphi/=double(nframes)
+    for k in arange(4):
+	for j in arange(4):
+	    tudem[k,j]*=drdx[k,k]/drdx[j,j]*sqrt(guu[k,k]*gdd[j,j])
+            tudma[k,j]*=drdx[k,k]/drdx[j,j]*sqrt(guu[k,k]*gdd[j,j])
+
+	#   ss=shape(rhomean) 
+ 	#   nx=ss[0]
+  	#  ny=ss[1]
+    # we need some 3D data
+    rho3d=rhomean ;  p3d=pmean ; ur3d=uur ; uh3d=uuh ; up3d=uup
+    fout=open('merge_rho3d.dat', 'w')
+    for kx in arange(nx):
+        for ky in arange(ny):
+	    for kz in arange(nz):
+            	fout.write(str(rho3d[kx,ky, kz])+'\n')
+    fout.close()
+    fout=open('merge_p3d.dat', 'w')
+    for kx in arange(nx):
+        for ky in arange(ny):
+            for kz in arange(nz):
+                fout.write(str(p3d[kx,ky, kz])+'\n')
+    fout.close()
+    fout=open('merge_u3d.dat', 'w')
+    # uu on the mesh
+    for kx in arange(nx):
+        for ky in arange(ny):
+            for kz in arange(nz):
+            	fout.write(str(uu0[kx,ky,kz])+' '+str(uur[kx,ky,kz])+' '+str(uuh[kx,ky,kz])+' '+str(uup[kx,ky,kz])+'\n')
+    fout.close()
+    fout=open('merge_pu3d.dat', 'w')
+    # uu on the mesh
+    for kx in arange(nx):
+        for ky in arange(ny):
+            for kz in arange(nz):
+                fout.write(str(puu0[kx,ky,kz])+' '+str(puur[kx,ky,kz])+' '+str(puuh[kx,ky,kz])+' '+str(puup[kx,ky,kz])+'\n')
+    fout.close()
+    fout=open('merge_mpu3d.dat', 'w')
+    # uu on the mesh
+    for kx in arange(nx):
+        for ky in arange(ny):
+            for kz in arange(nz):
+                fout.write(str(mpuu0[kx,ky,kz])+' '+str(mpuur[kx,ky,kz])+' '+str(mpuuh[kx,ky,kz])+' '+str(mpuup[kx,ky,kz])+'\n')
+    fout.close()
+
+    # 2D or 3D? averaging over phi
+    rhomean=rhomean.mean(axis=2)
+    rhodisp=rhodisp.mean(axis=2)
+    pmean=pmean.mean(axis=2) ; magp_mean=magp_mean.mean(axis=2)
+    uu0=uu0.mean(axis=2) ; uur=uur.mean(axis=2) ; uuh=uuh.mean(axis=2) ; uup=uup.mean(axis=2)
+    ud0=ud0.mean(axis=2) ; udr=udr.mean(axis=2) ; udh=udh.mean(axis=2) ; udp=udp.mean(axis=2)
+    puu0=puu0.mean(axis=2) ; puur=puur.mean(axis=2) ; puuh=puuh.mean(axis=2) ; puup=puup.mean(axis=2)
+    pud0=pud0.mean(axis=2) ; pudr=pudr.mean(axis=2) ; pudh=pudh.mean(axis=2) ; pudp=pudp.mean(axis=2)
+    mpuu0=mpuu0.mean(axis=2) ; mpuur=mpuur.mean(axis=2) ; mpuuh=mpuuh.mean(axis=2) ; mpuup=mpuup.mean(axis=2)
+    mpud0=mpud0.mean(axis=2) ; mpudr=mpudr.mean(axis=2) ; mpudh=mpudh.mean(axis=2) ; mpudp=mpudp.mean(axis=2)
+    #  drp=drp.mean(axis=2)  ;  dhp=dhp.mean(axis=2)  ;  drh=drh.mean(axis=2)
+    tudem=tudem.mean(axis=-1)
+    tudma=tudma.mean(axis=-1)
+    # aphi=aphi.mean(axis=-1)	
+    # r mesh:
+    fout=open('merge_r.dat', 'w')
+    for kx in arange(nx):
+        fout.write(str(r[kx,0,0])+'\n')
+    fout.close()
+    fout=open('merge_h.dat', 'w')
+    # theta mesh
+    for ky in arange(ny):
+        fout.write(str(h[0,ky,0])+'\n')
+    fout.close()
+    fout=open('merge_phi.dat', 'w')
+    # phi mesh
+    for kz in arange(nz):
+	fout.write(str(ph[0,0,kz])+'\n')
+    fout.close()   
+    fout=open('merge_rho.dat', 'w')
+    # rho on the mesh
+    for kx in arange(nx):
+        for ky in arange(ny):
+            fout.write(str(rhomean[kx,ky])+'\n')
+    fout.close()
+    # p on the mesh
+    fout=open('merge_p.dat', 'w')
+    for kx in arange(nx):
+        for ky in arange(ny):
+            fout.write(str(pmean[kx,ky])+'\n')
+    fout.close()
+    # magnetic pressure on the mesh
+    fout=open('merge_mp.dat', 'w')
+    for kx in arange(nx):
+        for ky in arange(ny):
+            fout.write(str(magp_mean[kx,ky])+'\n')
+    fout.close()
+    fout=open('merge_uu.dat', 'w')
+    # uu on the mesh
+    for kx in arange(nx):
+        for ky in arange(ny):
+            fout.write(str(uu0[kx,ky])+' '+str(uur[kx,ky])+' '+str(uuh[kx,ky])+' '+str(uup[kx,ky])+'\n')
+    fout.close()
+    fout=open('merge_ud.dat', 'w')
+    # ud on the mesh
+    for kx in arange(nx):
+        for ky in arange(ny):
+            fout.write(str(ud0[kx,ky])+' '+str(udr[kx,ky])+' '+str(udh[kx,ky])+' '+str(udp[kx,ky])+'\n')
+    fout.close()
+    fout=open('merge_puu.dat', 'w')
+    # uu on the mesh
+    for kx in arange(nx):
+        for ky in arange(ny):
+            fout.write(str(puu0[kx,ky])+' '+str(puur[kx,ky])+' '+str(puuh[kx,ky])+' '+str(puup[kx,ky])+'\n')
+    fout.close()
+    fout=open('merge_pud.dat', 'w')
+    # ud on the mesh
+    for kx in arange(nx):
+        for ky in arange(ny):
+            fout.write(str(pud0[kx,ky])+' '+str(pudr[kx,ky])+' '+str(pudh[kx,ky])+' '+str(pudp[kx,ky])+'\n')
+    fout.close()
+    fout=open('merge_mpuu.dat', 'w')
+    # uu on the mesh
+    for kx in arange(nx):
+        for ky in arange(ny):
+            fout.write(str(mpuu0[kx,ky])+' '+str(mpuur[kx,ky])+' '+str(mpuuh[kx,ky])+' '+str(mpuup[kx,ky])+'\n')
+    fout.close()
+    fout=open('merge_mpud.dat', 'w')
+    # ud on the mesh
+    for kx in arange(nx):
+        for ky in arange(ny):
+            fout.write(str(mpud0[kx,ky])+' '+str(mpudr[kx,ky])+' '+str(mpudh[kx,ky])+' '+str(mpudp[kx,ky])+'\n')
+    fout.close()
+
+    fout=open('merge_tudem.dat', 'w')
+    # EM energy-stress tensor
+    for kx in arange(nx):
+        for ky in arange(ny):
+            fout.write(str(tudem[0,0][kx,ky])+' '+str(tudem[0,1][kx,ky])+' '+str(tudem[0,2][kx,ky])+' '+str(tudem[0,3][kx,ky])+' ')
+            fout.write(str(tudem[1,0][kx,ky])+' '+str(tudem[1,1][kx,ky])+' '+str(tudem[1,2][kx,ky])+' '+str(tudem[1,3][kx,ky])+' ')
+            fout.write(str(tudem[2,0][kx,ky])+' '+str(tudem[2,1][kx,ky])+' '+str(tudem[2,2][kx,ky])+' '+str(tudem[2,3][kx,ky])+' ')
+            fout.write(str(tudem[3,0][kx,ky])+' '+str(tudem[3,1][kx,ky])+' '+str(tudem[3,2][kx,ky])+' '+str(tudem[3,3][kx,ky])+'\n')
+    fout.close()
+    fout=open('merge_tudma.dat', 'w')
+    # matter energy-stress tensor
+    for kx in arange(nx):
+        for ky in arange(ny):
+            fout.write(str(tudma[0,0][kx,ky])+' '+str(tudma[0,1][kx,ky])+' '+str(tudma[0,2][kx,ky])+' '+str(tudma[0,3][kx,ky])+' ')
+            fout.write(str(tudma[1,0][kx,ky])+' '+str(tudma[1,1][kx,ky])+' '+str(tudma[1,2][kx,ky])+' '+str(tudma[1,3][kx,ky])+' ')
+            fout.write(str(tudma[2,0][kx,ky])+' '+str(tudma[2,1][kx,ky])+' '+str(tudma[2,2][kx,ky])+' '+str(tudma[2,3][kx,ky])+' ')
+            fout.write(str(tudma[3,0][kx,ky])+' '+str(tudma[3,1][kx,ky])+' '+str(tudma[3,2][kx,ky])+' '+str(tudma[3,3][kx,ky])+'\n')
+    fout.close()
+    fout=open('merge_aphi.dat', 'w')
+    # poloidal magnetic field lines	
+    for kx in arange(nx):
+        for ky in arange(ny):
+            fout.write(str(aphi[kx,ky])+'\n')
+    fout.close()
+
+# reading dumps again to estimate the ellipsoid of turbulent velocities
+def corvee(n1,n2):
+    
+    rg("gdump")
+
+    # velocities:
+    uufile='merge_uu.dat'
+    udfile='merge_ud.dat'
+    fuu=open(uufile, 'r')
+    fud=open(udfile, 'r')
+#    s=str.split(str.strip(fuu.readline()))
+
+    uumean=zeros([4,nx,ny,nz], dtype=double)
+    udmean=zeros([4,nx,ny,nz], dtype=double)
+
+    for kx in arange(nx):
+        for ky in arange(ny):
+            s=str.split(str.strip(fuu.readline()))
+            uumean[0,kx,ky,:]=double(s[0])
+            uumean[1,kx,ky,:]=double(s[1])
+            uumean[2,kx,ky,:]=double(s[2])
+            uumean[3,kx,ky,:]=double(s[3])
+            s=str.split(str.strip(fud.readline()))
+            udmean[0,kx,ky,:]=double(s[0])
+            udmean[1,kx,ky,:]=double(s[1])
+            udmean[2,kx,ky,:]=double(s[2])
+            udmean[3,kx,ky,:]=double(s[3])
+
+    fuu.close()
+    fud.close()
+
+    # tetrad components:
+    t0=tetrad_t(uumean, udmean)
+    tr=tetrad_r(uumean, udmean)
+    th=tetrad_h(uumean, udmean)
+    tp=tetrad_p(uumean, udmean)
+#    print shape(tr)
+
+    nframes=n2-n1+1
+    n=n1+arange(nframes)
+
+    for k in n:
+        fname=dumpname(k)
+        rd(fname)
+        if(k==n1):
+            rhomean=rho
+            # velocity components:
+            uu0=uu[0]*drdx[0,0]-uumean[0] ; ud0=ud[0]/drdx[0,0]-udmean[0]
+            uur=uu[1]*drdx[1,1]-uumean[1] ; udr=ud[1]/drdx[1,1]-udmean[1]
+            uuh=uu[2]*drdx[2,2]-uumean[2] ; udh=ud[2]/drdx[2,2]-udmean[2]
+            uup=uu[3]*drdx[3,3]-uumean[3] ; udp=ud[3]/drdx[3,3]-udmean[3]
+            tuur=(uu0*tr[0]+uur*tr[1]+uuh*tr[2]+uup*tr[3])
+            tuuh=(uu0*th[0]+uur*th[1]+uuh*th[2]+uup*th[3])
+            tuup=(uu0*tp[0]+uur*tp[1]+uuh*tp[2]+uup*tp[3])
+            drh=rho*tuur*tuuh ; drp=rho*tuur*tuup ; dhp=rho*tuuh*tuup
+            drr=rho*tuur*tuur ; dpp=rho*tuup*tuup ; dhh=rho*tuuh*tuuh
+#            print(shape(drh))
+#            print(shape(rho))
+#            print(shape(tuur))
+        else:
+            rhomean+=rho
+            # velocity components:
+            uu0=uu[0]-uumean[0] ; ud0=ud[0]-udmean[0]
+            uur=uu[1]-uumean[1] ; udr=ud[1]-udmean[1]
+            uuh=uu[2]-uumean[2] ; udh=ud[2]-udmean[2]
+            uup=uu[3]-uumean[3] ; udp=ud[3]-udmean[3]
+            tuur=(uu0*tr[0]+uur*tr[1]+uuh*tr[2]+uup*tr[3])
+            tuuh=(uu0*th[0]+uur*th[1]+uuh*th[2]+uup*th[3])
+            tuup=(uu0*tp[0]+uur*tp[1]+uuh*tp[2]+uup*tp[3])
+            drh+=rho*tuur*tuuh ; drp+=rho*tuur*tuup ; dhp+=rho*tuuh*tuup
+            drr+=rho*tuur*tuur ; dpp+=rho*tuup*tuup ; dhh+=rho*tuuh*tuuh
+
+    drh/=rhomean ;    drp/=rhomean ;    dhp/=rhomean 
+    drr/=rhomean ;    dpp/=rhomean ;    dhh/=rhomean 
+  
+    drh=drh.mean(axis=2) ;  drp=drp.mean(axis=2) ;  dhp=dhp.mean(axis=2)
+    drr=drr.mean(axis=2) ;  dpp=dpp.mean(axis=2) ;  dhh=dhh.mean(axis=2)
+ 
+    fout=open('merge_corv.dat', 'w')
+    for kx in arange(nx):
+        for ky in arange(ny):
+            # RR HH PP RH HP RP
+            fout.write(str(drr[kx,ky])+' '+str(dhh[kx,ky])+' '+str(dpp[kx,ky])+' '+str(drh[kx,ky])+' '+str(dhp[kx,ky])+' '+str(drp[kx,ky])+'\n')
+    fout.close()
+
+# making a horizontal slice
+def fromabove(fname, htor=0.1, alifactor=1):
+
+    # alifactor = alias factor, every alifactorth point in r and phi will be outputted, phi averaged over
+#    rg("gdump")
+    rd(fname)
+
+    run=unique(r)
+    hun=unique(h)
+    phun=unique(ph)
+
+    indisk=double(abs(cos(h))<htor)
+    innorm=indisk.mean(axis=1)
+
+    ugmean=(ug*indisk).mean(axis=1)/innorm
+    uu[0]*=drdx[0,0]  ; uu[1]*=drdx[1,1]  ; uu[2]*=drdx[2,2]  ; uu[3]*=drdx[3,3]  # to physical
+    ud[0]/=drdx[0,0]  ; ud[1]/=drdx[1,1]  ; ud[2]/=drdx[2,2]  ; ud[3]/=drdx[3,3]  # to physical
+
+    uumean0=(uu[0]*indisk*rho).mean(axis=1)/(rho*indisk).mean(axis=1)
+    uumeanr=(uu[1]*indisk*rho).mean(axis=1)/(rho*indisk).mean(axis=1)
+    uumeanh=(uu[2]*indisk*rho).mean(axis=1)/(rho*indisk).mean(axis=1)
+    uumeanp=(uu[3]*indisk*rho).mean(axis=1)/(rho*indisk).mean(axis=1)
+    uumean0_p=(uu[0]*indisk*ug).mean(axis=1)/(ug*indisk).mean(axis=1)
+    uumeanr_p=(uu[1]*indisk*ug).mean(axis=1)/(ug*indisk).mean(axis=1)
+    uumeanh_p=(uu[2]*indisk*ug).mean(axis=1)/(ug*indisk).mean(axis=1)
+    uumeanp_p=(uu[3]*indisk*ug).mean(axis=1)/(ug*indisk).mean(axis=1)
+    udmean0=(ud[0]*indisk*rho).mean(axis=1)/(rho*indisk).mean(axis=1)
+    udmeanr=(ud[1]*indisk*rho).mean(axis=1)/(rho*indisk).mean(axis=1)
+    udmeanh=(ud[2]*indisk*rho).mean(axis=1)/(rho*indisk).mean(axis=1)
+    udmeanp=(ud[3]*indisk*rho).mean(axis=1)/(rho*indisk).mean(axis=1)
+    udmean0_p=(ud[0]*indisk*ug).mean(axis=1)/(ug*indisk).mean(axis=1)
+    udmeanr_p=(ud[1]*indisk*ug).mean(axis=1)/(ug*indisk).mean(axis=1)
+    udmeanh_p=(ud[2]*indisk*ug).mean(axis=1)/(ug*indisk).mean(axis=1)
+    udmeanp_p=(ud[3]*indisk*ug).mean(axis=1)/(ug*indisk).mean(axis=1)
+
+    rhomean=(rho*indisk).mean(axis=1)/innorm
+    pmag=(bsq*indisk).mean(axis=1)/innorm/2.
+
+    # r mesh:
+    fout=open(fname+'_eq_r.dat', 'w')
+    for kx in arange(nx):
+        if(kx%alifactor==0):
+            fout.write(str(run[kx])+'\n')
+    fout.close()
+    fout=open(fname+'_eq_phi.dat', 'w')
+    # phi mesh
+    for kz in arange(nz):
+	#        if(kz%alifactor==0):
+        fout.write(str(phun[kz])+'\n')
+    fout.close()
+
+    foutrho=open(fname+'_eq_rho.dat', 'w') # density
+    foutp=open(fname+'_eq_p.dat', 'w') # gas pressure
+    foutpm=open(fname+'_eq_pm.dat', 'w') # magnetic pressure
+    foutu=open(fname+'_eq_uu.dat', 'w') # contravariant velocities
+    foutd=open(fname+'_eq_ud.dat', 'w') # covariant velocities
+    foutup=open(fname+'_eq_puu.dat', 'w') # pressure-averaged contravariant velocities
+    foutdp=open(fname+'_eq_pud.dat', 'w') # pressure-averaged covariant velocities
+
+    # rho on the mesh
+    for kx in arange(nx):
+        if(kx%alifactor==0):
+            for kz in arange(nz):
+                foutrho.write(str(rhomean[kx,kz])+'\n')
+                foutp.write(str(ugmean[kx,kz]*(gam-1.))+'\n')
+		foutpm.write(str(pmag[kx,kz])+'\n')
+                foutu.write(str(uumean0[kx,kz])+' '+str(uumeanr[kx,kz])+' '+str(uumeanh[kx,kz])+' '+str(uumeanp[kx,kz])+'\n')
+                foutd.write(str(udmean0[kx,kz])+' '+str(udmeanr[kx,kz])+' '+str(udmeanh[kx,kz])+' '+str(udmeanp[kx,kz])+'\n')
+                foutup.write(str(uumean0_p[kx,kz])+' '+str(uumeanr_p[kx,kz])+' '+str(uumeanh_p[kx,kz])+' '+str(uumeanp_p[kx,kz])+'\n')
+                foutdp.write(str(udmean0_p[kx,kz])+' '+str(udmeanr_p[kx,kz])+' '+str(udmeanh_p[kx,kz])+' '+str(udmeanp_p[kx,kz])+'\n')
+    foutrho.close()
+    foutp.close()
+    foutpm.close()
+    foutu.close()
+    foutd.close()
+    foutup.close()
+    foutdp.close()
+    os.system('tar -cf '+fname+'_eq.tar '+fname+'_dinfo.dat '+fname+'_eq_*.dat')
+
+# reading one frame and making it lighter and 2D and saving as an ascii
+def framerip(fname, alifactor=1):
+    global rho, ug, uu, ud, gam, B, aphi
+
+    # alifactor = alias factor, every alifactorth point in r and th will be outputted, phi averaged over
+#    rg("gdump")
+
+    rd(fname)
+	#    print(rho)
+    run=unique(r)
+    hun=unique(h)
+
+    ug=ug.mean(axis=2)
+#    uu[0]*=drdx[0,0]  ; uu[1]*=drdx[1,1]  ; uu[2]*=drdx[2,2]  ; uu[3]*=drdx[3,3]  # to physical
+    uu0=(uu[0]*rho*drdx[0,0]).mean(axis=2)/rho.mean(axis=2)
+    uur=(uu[1]*rho*drdx[1,1]).mean(axis=2)/rho.mean(axis=2)
+    uuh=(uu[2]*rho*drdx[2,2]).mean(axis=2)/rho.mean(axis=2)
+    uup=(uu[3]*rho*drdx[3,3]).mean(axis=2)/rho.mean(axis=2)
+
+#   uu[0]*=drdx[0,0]  ; uu[1]*=drdx[1,1]  ; uu[2]*=drdx[2,2]  ; uu[3]*=drdx[3,3]  # to physical
+#    ud[0]/=drdx[0,0]  ; ud[1]/=drdx[1,1]  ; ud[2]/=drdx[2,2]  ; ud[3]/=drdx[3,3]  # to physical
+
+#    ud=(ud*rho).mean(axis=3)/rho.mean(axis=2)
+#    ud[0]/=drdx[0,0]  ; ud[1]/=drdx[1,1]  ; ud[2]/=drdx[2,2]  ; ud[3]/=drdx[3,3]  # to physical
+    ud0=(ud[0]*rho/drdx[0,0]).mean(axis=2)/rho.mean(axis=2)
+    udr=(ud[1]*rho/drdx[1,1]).mean(axis=2)/rho.mean(axis=2)
+    udh=(ud[2]*rho/drdx[2,2]).mean(axis=2)/rho.mean(axis=2)
+    udp=(ud[3]*rho/drdx[3,3]).mean(axis=2)/rho.mean(axis=2)
+
+    rhom=rho.mean(axis=2)
+    pmag=(bsq).mean(axis=2)/2.
+    aphi=psicalc()
+    B[1]=B[1]*drdx[1,1] ; B[2]=B[2]*drdx[2,2] ; B[3]=B[3]*drdx[3,3]
+    B=B.mean(axis=3)
+#    aphi=aphi.mean(axis=2)
+
+    # r mesh:
+    fout=open(fname+'_r.dat', 'w')
+    for kx in arange(nx):
+        if(kx%alifactor==0):
+            fout.write(str(run[kx])+'\n')
+    fout.close()
+    fout=open(fname+'_h.dat', 'w')
+    # theta mesh
+    for ky in arange(ny):
+        if(ky%alifactor==0):
+            fout.write(str(hun[ky])+'\n')
+    fout.close()
+    
+    foutrho=open(fname+'_rho.dat', 'w')
+    foutp=open(fname+'_p.dat', 'w')
+    foutpm=open(fname+'_pm.dat', 'w')
+    foutu=open(fname+'_uu.dat', 'w')
+    foutd=open(fname+'_ud.dat', 'w')
+    foutb=open(fname+'_b.dat', 'w')
+    # rho on the mesh
+    for kx in arange(nx):
+        if(kx%alifactor==0):
+            for ky in arange(ny):
+                if(ky%alifactor==0):
+                    foutrho.write(str(rhom[kx,ky])+'\n')
+                    foutp.write(str(ug[kx,ky]*(gam-1.))+'\n')
+                    foutpm.write(str(pmag[kx,ky]/2.)+'\n')
+                    foutu.write(str(uu0[kx,ky])+' '+str(uur[kx,ky])+' '+str(uuh[kx,ky])+' '+str(uup[kx,ky])+'\n')
+                    foutd.write(str(ud0[kx,ky])+' '+str(udr[kx,ky])+' '+str(udh[kx,ky])+' '+str(udp[kx,ky])+'\n')
+		    foutb.write(str(B[1, kx,ky])+' '+str(B[2, kx,ky])+' '+str(B[3, kx,ky])+' '+str(aphi[kx,ky])+'\n')
+    foutb.close()
+    foutrho.close()
+    foutp.close()
+    foutpm.close()
+    foutu.close()
+    foutd.close()
+    os.system('tar -cf '+fname+'.tar '+fname+'_*.dat')
+
+# makes ascii files with degraded resolution from all the dumps
+def defaultrun():
+
+    dire=''
+    rref=10.
+ #   os.chdir(dire)
+#    dumpinfo()
+    rg("gdump")
+    run=unique(r)
+    nr=run[where(run<rref)].argmax()
+
+    fout=open("dumps_mevol.dat", "w")
+
+    flist=get_sorted_file_list(prefix=dire+"/dump")
+    nlist=size(flist)
+    for k in arange(nlist):
+	dumpinfo(flist[k])
+	framerip(flist[k], alifactor=3)
+	maccre, mwind, laccre, lwind = mint(rref)
+	fromabove(flist[k], alifactor=3)
+        print "merger_remote defaultrun: reducing "+str(flist[k])
+	fout.write(str(t)+" "+str(maccre)+" "+str(mwind)+" "+str(laccre)+" "+str(lwind)+"\n")
+    fout.close()
+
+# produces time-averaged frames:
+def corveerun(nfirst=None, nlast=None):
+    rg("gdump")
+    readndump(nfirst,nlast)
+    corvee(nfirst, nlast)
+    os.system('tar -cf mergereads.tar merge_*.dat')
+
+defaultrun()
+# corveerun()
+
