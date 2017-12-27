@@ -141,8 +141,8 @@ void init_torus()
   double rho_av,umax,beta,bsq_ij,bsq_max,norm,q,beta_act ;
   double lfish_calc(double rmax) ;
 
-  int nloops=1; /* number of loops; nloops=0 reproduces the default behaviour  */
-  bool evenloops=True;
+  int nloops=10; /* number of loops; nloops=0 reproduces the default behaviour  */
+  int evenloops=1;
   double zloop, rloop, aplus;
   
   int iglob, jglob, kglob;

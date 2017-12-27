@@ -43,14 +43,17 @@
 #***********************************************************************************/
 #### set USEICC to 0 if you want gcc compiler options, else set to 1 to use icc
 ########  gcc generally used for debugging with -g option so we can use gdb 
-USEICC = 0
+USEICC = 1
 USEOMP = 0  #please do not use this option (yet), as this has not been recently tested
 USEMPI = 1
+GSLLIB=$(HOME)/gsl/build/lib
+GSLINC=$(HOME)/gsl/build/include
+export LD_LIBRARY_PATH=$GSLLIB:$LD_LIBRARY_PATH
 
 ifeq ($(USEICC),1)
-CC       = /usr/lib64/mpi/gcc/openmpi/bin/mpicc
-# CCFLAGS2  = -O2 -xhost -Wrestrict #-no-prec-div -axCORE-AVX2 -xSSE4.2 #-O2 -xAVX 
-CCFLAGS  = -O2
+CC       = mpicc
+CCFLAGS2  = -O2 #  -xhost # -restrict -no-prec-div -axCORE-AVX2 -xSSE4.2 #-O2 -xAVX 
+#CCFLAGS  = -O2
 ifeq ($(USEOMP),1)
 CCFLAGS  = $(CCFLAGS2) -openmp
 else
@@ -61,7 +64,7 @@ endif
 
 ifeq ($(USEICC),0)
 CC       = gcc
-CCFLAGS1  = -g -O2 -ggdb -Wall -Wextra -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-unknown-pragmas #-fsanitize=address -fno-omit-frame-pointer
+CCFLAGS1  = -g -O2 -ggdb -Wall -Wextra -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-unknown-pragmas  #-fsanitize=address -fno-omit-frame-pointer
 ifeq ($(USEOMP),1)
 CCFLAGS  = $(CCFLAGS1) -fopenmp
 else
@@ -71,14 +74,16 @@ endif
 
 
 ifeq ($(USEMPI),1)
-EXTRALIBS= -L/usr/lib64/mpi/gcc/openmpi/lib64 -lm -lmpi -lgsl -lgslcblas
+EXTRALIBS= -lm  # -lmpi
 EXTRACCFLAGS=-DMPI
-CC=/usr/lib64/mpi/gcc/openmpi/bin/mpicc # mpicc #/usr/local/bin/mpicc
-LD_LIBRARY_PATH = /usr/lib64/mpi/gcc/openmpi/lib64
+CC=mpicc #/usr/local/bin/mpicc
 else
-EXTRALIBS = -lm -lmpi -lgsl -lgslcblas
+EXTRALIBS = -lm
 EXTRACCFLAGS = 
 endif
+
+EXTRALIBS = -L$(GSLLIB) -lm -lgsl -lgslcblas
+CCFLAGS = $(CCFLAGS1) -I$(GSLINC)
 
 CC_COMPILE  = $(CC) $(CCFLAGS) $(EXTRACCFLAGS) -c 
 CC_LOAD     = $(CC) $(CCFLAGS) $(EXTRACCFLAGS)
