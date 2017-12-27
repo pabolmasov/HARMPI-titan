@@ -5,10 +5,9 @@ import os
 from os.path import *
 from os import fsync
 # import harm_script as h
-import glob
+# import glob
 # import sys
-# from reader import *
-import reader as re
+from reader import *
 
 """
 this file was created specifically for remote processing of extensively large dumps outputs on a cluster. 
@@ -24,42 +23,55 @@ def get_sorted_file_list(prefix="dump"):
     flist2.sort()
     flist = np.concatenate((flist0,flist1,flist2))
     return flist
+    
 
 def faraday():
-    #    global re.omegaf1, re.omegaf2
-    if 're.omegaf1' in globals():
-        del re.omegaf1
-    if 're.omemaf2' in globals():
-        del re.omegaf2
-    omegaf1=re.fFdd(0,1)/re.fFdd(1,3)
-    omegaf2=re.fFdd(0,2)/re.fFdd(2,3)
-    return omegaf1, omegaf2
+    global omegaf1, omegaf2
+    if 'omegaf1' in globals():
+        del omegaf1
+    if 'omemaf2' in globals():
+        del omegaf2
+    omegaf1=fFdd(0,1)/fFdd(1,3)
+    omegaf2=fFdd(0,2)/fFdd(2,3)
 
 def Tcalcud():
     global Tud, TudEM, TudMA
     global mu, sigma
     global enth
     global unb, isunbound
-    pg = (re.gam-1)*re.ug
-    w=re.rho+re.ug+pg
-    eta=w+re.bsq
-    Tud = np.zeros((4,4,re.nx,re.ny,re.nz),dtype=np.float32,order='F')
-    TudMA = np.zeros((4,4,re.nx,re.ny,re.nz),dtype=np.float32,order='F')
-    TudEM = np.zeros((4,4,re.nx,re.ny,re.nz),dtype=np.float32,order='F')
+    pg = (gam-1)*ug
+    w=rho+ug+pg
+    eta=w+bsq
+    if 'Tud' in globals():
+        del Tud
+    if 'TudMA' in globals():
+        del TudMA
+    if 'TudEM' in globals():
+        del TudEM
+    if 'mu' in globals():
+        del mu
+    if 'sigma' in globals():
+        del sigma
+    if 'unb' in globals():
+        del unb
+    if 'isunbound' in globals():
+        del isunbound
+    Tud = np.zeros((4,4,nx,ny,nz),dtype=np.float32,order='F')
+    TudMA = np.zeros((4,4,nx,ny,nz),dtype=np.float32,order='F')
+    TudEM = np.zeros((4,4,nx,ny,nz),dtype=np.float32,order='F')
     for kapa in np.arange(4):
         for nu in np.arange(4):
             if(kapa==nu): delta = 1
             else: delta = 0
-            TudEM[kapa,nu] = re.bsq*re.uu[kapa]*re.ud[nu] + 0.5*re.bsq*delta - re.bu[kapa]*re.bd[nu]
-            TudMA[kapa,nu] = w*re.uu[kapa]*re.ud[nu]+pg*delta
+            TudEM[kapa,nu] = bsq*uu[kapa]*ud[nu] + 0.5*bsq*delta - bu[kapa]*bd[nu]
+            TudMA[kapa,nu] = w*uu[kapa]*ud[nu]+pg*delta
             #Tud[kapa,nu] = eta*uu[kapa]*ud[nu]+(pg+0.5*bsq)*delta-bu[kapa]*bd[nu]
-            re.Tud[kapa,nu] = re.TudEM[kapa,nu] + re.TudMA[kapa,nu]
-    mu = -Tud[1,0]/(re.rho*re.uu[1])
-    sigma = re.TudEM[1,0]/re.TudMA[1,0]
-    enth=1+re.ug*re.gam/re.rho
-    unb=enth*re.ud[0]
+            Tud[kapa,nu] = TudEM[kapa,nu] + TudMA[kapa,nu]
+    mu = -Tud[1,0]/(rho*uu[1])
+    sigma = TudEM[1,0]/TudMA[1,0]
+    enth=1+ug*gam/rho
+    unb=enth*ud[0]
     isunbound=(-unb>1.0)
-
 #############################################################
 # tetrad covariant components... and all the grid parameters should be set as well
 # on my laptop, the description is in ~/Arts/illum/frominside.tex
@@ -67,45 +79,42 @@ def tetrad_t(uumean, udmean):
     return -udmean[0]/drdx[0,0], -udmean[1]/drdx[1,1], 0.*udmean[0]/drdx[2,2], -udmean[3]/drdx[3,3]
 
 def tetrad_r(uumean, udmean):
-    guu=re.guu ; drdx=re.drdx
     gg=guu[0,3]**2-guu[0,0]*guu[3,3] #1.+uumean[3]*udmean[3]
     hh=guu[3,3]+uumean[3]*uumean[3]
     s=sqrt(fabs(gg*hh*guu[1,1]))
     return guu[3,3]*uumean[1]/s/drdx[0,0], gg*udmean[0]/s/drdx[1,1], 0.*uumean[0]/drdx[2,2], -guu[0,3]*uumean[1]/s/drdx[3,3]
 
 def tetrad_h(uumean, udmean):
-    gdd=re.gdd ; drdx=re.drdx
     return 0.*uumean[0]/drdx[0,0], 0.*uumean[0]/drdx[1,1], sqrt(gdd[2,2])/drdx[2,2], 0.*uumean[0]/drdx[3,3]
 
 def tetrad_p(uumean, udmean):
-    guu=re.guu ; drdx=re.drdx
     hh=sqrt(guu[3,3]+uumean[3]*uumean[3])
     return uumean[3]*udmean[0]/hh/drdx[0,0], uumean[3]*udmean[1]/hh/drdx[1,1], 0.*uumean[0]/drdx[2,2], (1.+uumean[3]*udmean[3])/hh/drdx[3,3]
 
 # outputting all the basic information about the dump to a file
 def dumpinfo(prefix):
     
-    re.rg("gdump")
-    re.rd(prefix)
-    fout=open("dumps/"+prefix+"_dinfo.dat", "w")
+    rg("gdump")
+    rd(prefix)
+    fout=open(prefix+"_dinfo.dat", "w")
 
-    fout.write(str(re.nx)+" "+str(re.ny)+" "+str(re.nz)+"\n")
-    print "nr x ntheta x nphi = "+str(re.nx)+" "+str(re.ny)+" "+str(re.nz)
+    fout.write(str(nx)+" "+str(ny)+" "+str(nz)+"\n")
+    print "nr x ntheta x nphi = "+str(nx)+" "+str(ny)+" "+str(nz)
     
-    fout.write(str(re.a)+"\n")
-    print "Kerr parameter a = "+str(re.a)
+    fout.write(str(a)+"\n")
+    print "Kerr parameter a = "+str(a)
 
-    fout.write(str(re.t)+"\n")
-    print "time "+str(re.t)
+    fout.write(str(t)+"\n")
+    print "time "+str(t)
     fout.close()
 
 # calculated and writes out evolution of some global parameters; rref is the radius at which the mass and momentum flows are calculated
 def glevol(nmax, rref):
 #    global rho, uu
-    rg("gdump")
-    gdet=re.gdet ; gcov=re.gcov ; _dx2=re._dx2 ; _dx3=re._dx3
+   # rg("gdump")
+
     # rref is reference radius
-    run=unique(re.r)
+    run=unique(r)
     nr=run[where(run<rref)].argmax()
 
 #    maccre=zeros(nmax, dtype=double)
@@ -115,19 +124,19 @@ def glevol(nmax, rref):
     for k in arange(nmax):
         fname=dumpname(k)
 	print "reading "+str(fname)
-        re.rd(fname)
-	print "rho is "+str(shape(re.rho))
+        rd(fname)
+	print "rho is "+str(shape(rho))
         #        Tcalcud()
         # accretion rate at rref
-	rhom=(re.rho).mean(axis=2) ;  uum=(re.uu).mean(axis=3)
-        
+	rhom=rho.mean(axis=2)
+	uum=uu.mean(axis=3)
         # do we need to multiply this by drdx??
         #        uum[0]=(uu[0]*drdx[0,0]).mean(axis=3) ;    uum[1]=(uu[1]*drdx[1,1]).mean(axis=3)
         #        uum[2]=(uu[2]*drdx[2,2]).mean(axis=3) ;    uum[2]=(uu[2]*drdx[2,2]).mean(axis=3)
-	maccre=-trapz((rhom*uum[1]*(uum[1]<0.)*sqrt(gdet/gcov[1,1]))[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
-        mwind=-trapz((rhom*uum[1]*(uum[1]>0.)*sqrt(gdet/gcov[1,1]))[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
-        laccre=-trapz((rho*fabs(ud[3]/ud[0])*uu[1]*(uu[1]<0.)*sqrt(gdet/gcov[1,1]))[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
-	lwind=-trapz((rho*fabs(ud[3]/ud[0])*uu[1]*(uu[1]>0.)*sqrt(gdet/gcov[1,1]))[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
+	maccre=-trapz((rhom*uum[1]*(uum[1]<0.)*sqrt(gdet/gcov[1,1]))[nr,:], x=h[nr,:,0])*_dx2*_dx3
+        mwind=-trapz((rhom*uum[1]*(uum[1]>0.)*sqrt(gdet/gcov[1,1]))[nr,:], x=h[nr,:,0])*_dx2*_dx3
+        laccre=-trapz((rho*fabs(ud[3]/ud[0])*uu[1]*(uu[1]<0.)*sqrt(gdet/gcov[1,1]))[nr,:], x=h[nr,:,0])*_dx2*_dx3
+	lwind=-trapz((rho*fabs(ud[3]/ud[0])*uu[1]*(uu[1]>0.)*sqrt(gdet/gcov[1,1]))[nr,:], x=h[nr,:,0])*_dx2*_dx3
         # maccre=-((rho*uu[1]*sqrt(gdet/gcov[1,1]))[nr,:,:]).sum()*_dx2*_dx3
         fmdot.write(str(t)+" "+str(maccre)+" "+str(mwind)+" "+str(laccre/maccre)+" "+str(lwind/mwind)+"\n")
     
@@ -148,20 +157,19 @@ def dumpname(n):
 
 def mint(rref):
     print "mint:"
-    print "shape(rho) = "+str(shape(re.rho))
-    print "shape(uu1) = "+str(shape(re.uu[1]))
-    print "shape gdet = "+str(shape(re.gdet))
-    hun=unique(re.h) ;     run=unique(re.r)
-    gdet=re.gdet ; gcov=re.gcov ; _dx2=re._dx2 ; _dx3=re._dx3 ; drdx=re.drdx
-    uu=re.uu ; ud=re.ud ; rho=re.rho ; _dx2=re._dx2 ; _dx3=re._dx3
+    print "shape(rho) = "+str(shape(rho))
+    print "shape(uu1) = "+str(shape(uu[1]))
+    print "shape gdet = "+str(shape(gdet))
+    hun=unique(h)
+    run=unique(r)
     nr=run[where(run<rref)].argmax()
-    indd=(rho*uu[1]*(uu[1]<0.)*sqrt(gdet/gcov[1,1]))[nr,:,:]
+    indd=squeeze((rho*uu[1]*(uu[1]<0.)*sqrt(gdet/gcov[1,1]))[nr,:,:])
     maccre=-trapz((indd).mean(axis=-1), x=hun)*_dx2*_dx3
-    indd=(rho*uu[1]*(uu[1]>0.)*sqrt(gdet/gcov[1,1]))[nr,:,:]
+    indd=squeeze((rho*uu[1]*(uu[1]>0.)*sqrt(gdet/gcov[1,1]))[nr,:,:])
     mwind=trapz((indd).mean(axis=-1), x=hun)*_dx2*_dx3
-    indd=(rho*uu[1]*(uu[1]<0.)*fabs(ud[3]/drdx[3,3])*sqrt(gdet/gcov[1,1]))[nr,:,:]
+    indd=squeeze((rho*uu[1]*(uu[1]<0.)*fabs(ud[3]/drdx[3,3])*sqrt(gdet/gcov[1,1]))[nr,:,:])
     laccre=-trapz((indd).mean(axis=-1), x=hun)*_dx2*_dx3
-    indd=(rho*uu[1]*(uu[1]>0.)*fabs(ud[3]/drdx[3,3])*sqrt(gdet/gcov[1,1]))[nr,:,:]
+    indd=squeeze((rho*uu[1]*(uu[1]>0.)*fabs(ud[3]/drdx[3,3])*sqrt(gdet/gcov[1,1]))[nr,:,:])
     lwind=-trapz((indd).mean(axis=-1), x=hun)*_dx2*_dx3
 
     return maccre, mwind, laccre/maccre, lwind/mwind
@@ -171,10 +179,8 @@ def readndump(n1, n2, rref=5.0):
 #    run=unique(r)
 #    nr=run[where(run<rref)].argmax()
 
-    re.rg("gdump")
-    nx=re.nx ; ny=re.ny ; nz=re.nz
-    gdet=re.gdet ; gcov=re.gcov ; _dx2=re._dx2 ; _dx3=re._dx3 ; drdx=re.drdx
-    r=re.r ; h=re.h ; phi=re.phi # importing coordinate mesh
+    rg("gdump")
+
     if (n2<n1):
         print("readndump: invalid file number range")
         exit()
@@ -186,11 +192,18 @@ def readndump(n1, n2, rref=5.0):
 
     for k in n:
         fname=dumpname(k)
-        re.rd(fname)
+        rd(fname)
+        #        print(shape(rho))
         Tcalcud()
-	p=(re.gam-1.)*re.ug
-	magp=re.bsq/2.
-        rho=re.rho ; uu=re.uu ; ud=re.ud 
+#	rhoaver=rho
+	p=(gam-1.)*ug
+	magp=bsq/2.
+#        if(pflag):
+#            uaver=(gam-1.)*ug
+#	    if(withmag):
+#	    	uaver+=bsq/2.
+#        else:
+#            uaver=rho
         if(k==n1):
             rhomean=rho
             rhosqmean=rho**2
@@ -208,11 +221,11 @@ def readndump(n1, n2, rref=5.0):
             mpuuh=uu[2]*magp ; mpudh=ud[2]*magp
             mpuup=uu[3]*magp ; mpudp=ud[3]*magp
 
-            tudem=re.TudEM ; tudma=re.TudMA
-            pmean=p
+            tudem=TudEM ; tudma=TudMA
+            pmean=(gam-1.)*ug
 	   # unorm=uaver
 	    magp_mean=magp
-	    aphi=re.psicalc()
+	    aphi=psicalc()
         else:
             rhomean+=rho
             rhosqmean+=rho**2
@@ -230,13 +243,23 @@ def readndump(n1, n2, rref=5.0):
             mpuuh+=uu[2]*magp ; mpudh+=ud[2]*magp
             mpuup+=uu[3]*magp ; mpudp+=ud[3]*magp
 
-            pmean+=p
+            pmean+=(gam-1.)*ug
 	    magp_mean+=magp
-	    aphi+=re.psicalc()
+	    aphi+=psicalc()
 #	    unorm+=uaver
-	    tudem+=re.TudEM ; tudma+=re.TudMA
+	    tudem+=TudEM ; tudma+=TudMA
+	# mass accretion rate estimate
+#        uum=uu.mean(axis=3)
+
+#        rhom=rho.mean(axis=2)
+#        uum=uu.mean(axis=3)
+#        maccre=-trapz(((rho*uu[1]*(uu[1]<0.)*sqrt(gdet/gcov[1,1]))[nr,:]).mean(axis=1), x=h[nr,:,0])*_dx2*_dx3
+#        mwind=trapz(((rho*uu[1]*(uu[1]>0.)*sqrt(gdet/gcov[1,1]))[nr,:]).mean(axis=1), x=h[nr,:,0])*_dx2*_dx3
+#        laccre=-trapz(((rho*fabs(ud[3])*uu[1]*(uu[1]<0.)*sqrt(gdet/gcov[1,1]))[nr,:]).mean(axis=1), x=h[nr,:,0])*_dx2*_dx3
+#        lwind=-trapz(((rho*fabs(ud[3])*uu[1]*(uu[1]>0.)*sqrt(gdet/gcov[1,1]))[nr,:]).mean(axis=1), x=h[nr,:,0])*_dx2*_dx3
+        # maccre=-((rho*uu[1]*sqrt(gdet/gcov[1,1]))[nr,:,:]).sum()*_dx2*_dx3
 	maccre, mwind, laccre, lwind = mint(rref)
-        fmdot.write(str(re.t)+" "+str(maccre)+" "+str(mwind)+" "+str(laccre/maccre)+" "+str(lwind/mwind)+"\n")
+        fmdot.write(str(t)+" "+str(maccre)+" "+str(mwind)+" "+str(laccre/maccre)+" "+str(lwind/mwind)+"\n")
     fmdot.close()
     # velocity normalization:
     uu0*=drdx[0,0]/rhomean ; uur*=drdx[1,1]/rhomean ; uuh*=drdx[2,2]/rhomean ; uup*=drdx[3,3]/rhomean
@@ -255,7 +278,6 @@ def readndump(n1, n2, rref=5.0):
     magp_mean=magp_mean/double(nframes)
     tudem/=double(nframes) ; tudma/=double(nframes)
     aphi/=double(nframes)
-    # physical stress-energy tensor components:
     for k in arange(4):
 	for j in arange(4):
 	    tudem[k,j]*=drdx[k,k]/drdx[j,j]*sqrt(guu[k,k]*gdd[j,j])
@@ -327,7 +349,7 @@ def readndump(n1, n2, rref=5.0):
     fout=open('merge_phi.dat', 'w')
     # phi mesh
     for kz in arange(nz):
-	fout.write(str(phi[0,0,kz])+'\n')
+	fout.write(str(ph[0,0,kz])+'\n')
     fout.close()   
     fout=open('merge_rho.dat', 'w')
     # rho on the mesh
@@ -412,18 +434,15 @@ def readndump(n1, n2, rref=5.0):
 # reading dumps again to estimate the ellipsoid of turbulent velocities
 def corvee(n1,n2):
     
-    re.rg("gdump")
-    nx=re.nx ; ny=re.ny ; nz=re.nz
-    gdet=re.gdet ; gcov=re.gcov ; _dx2=re._dx2 ; _dx3=re._dx3 ; drdx=re.drdx
-    r=re.r ; h=re.h ; phi=re.phi # importing coordinate mesh
+    rg("gdump")
 
     # velocities:
     uufile='merge_uu.dat'
     udfile='merge_ud.dat'
     fuu=open(uufile, 'r')
     fud=open(udfile, 'r')
-    #    s=str.split(str.strip(fuu.readline()))
-    # mean velocity field
+#    s=str.split(str.strip(fuu.readline()))
+
     uumean=zeros([4,nx,ny,nz], dtype=double)
     udmean=zeros([4,nx,ny,nz], dtype=double)
 
@@ -439,6 +458,7 @@ def corvee(n1,n2):
             udmean[1,kx,ky,:]=double(s[1])
             udmean[2,kx,ky,:]=double(s[2])
             udmean[3,kx,ky,:]=double(s[3])
+
     fuu.close()
     fud.close()
 
@@ -454,8 +474,7 @@ def corvee(n1,n2):
 
     for k in n:
         fname=dumpname(k)
-        re.rd(fname)
-        uu=re.uu ; ud=re.ud ; rho=re.rho
+        rd(fname)
         if(k==n1):
             rhomean=rho
             # velocity components:
@@ -463,7 +482,7 @@ def corvee(n1,n2):
             uur=uu[1]*drdx[1,1]-uumean[1] ; udr=ud[1]/drdx[1,1]-udmean[1]
             uuh=uu[2]*drdx[2,2]-uumean[2] ; udh=ud[2]/drdx[2,2]-udmean[2]
             uup=uu[3]*drdx[3,3]-uumean[3] ; udp=ud[3]/drdx[3,3]-udmean[3]
-            tuur=(uu0*tr[0]+uur*tr[1]+uuh*tr[2]+uup*tr[3])  # co-moving velocity components
+            tuur=(uu0*tr[0]+uur*tr[1]+uuh*tr[2]+uup*tr[3])
             tuuh=(uu0*th[0]+uur*th[1]+uuh*th[2]+uup*th[3])
             tuup=(uu0*tp[0]+uur*tp[1]+uuh*tp[2]+uup*tp[3])
             drh=rho*tuur*tuuh ; drp=rho*tuur*tuup ; dhp=rho*tuuh*tuup
@@ -502,17 +521,16 @@ def fromabove(fname, htor=0.1, alifactor=1):
 
     # alifactor = alias factor, every alifactorth point in r and phi will be outputted, phi averaged over
 #    rg("gdump")
-    re.rd(fname)
+    rd(fname)
 
-    run=unique(re.r)
-    hun=unique(re.h)
-    phun=unique(re.ph)
+    run=unique(r)
+    hun=unique(h)
+    phun=unique(ph)
 
-    indisk=double(abs(cos(re.h))<htor)
+    indisk=double(abs(cos(h))<htor)
     innorm=indisk.mean(axis=1)
 
-    ugmean=(re.ug*indisk).mean(axis=1)/innorm
-    drdx=re.drdx ; uu=re.uu ; ud=re.ud ; rho=re.rho ; ug=re.ug # can we just import all the data?
+    ugmean=(ug*indisk).mean(axis=1)/innorm
     uu[0]*=drdx[0,0]  ; uu[1]*=drdx[1,1]  ; uu[2]*=drdx[2,2]  ; uu[3]*=drdx[3,3]  # to physical
     ud[0]/=drdx[0,0]  ; ud[1]/=drdx[1,1]  ; ud[2]/=drdx[2,2]  ; ud[3]/=drdx[3,3]  # to physical
 
@@ -534,35 +552,35 @@ def fromabove(fname, htor=0.1, alifactor=1):
     udmeanp_p=(ud[3]*indisk*ug).mean(axis=1)/(ug*indisk).mean(axis=1)
 
     rhomean=(rho*indisk).mean(axis=1)/innorm
-    pmag=(re.bsq*indisk).mean(axis=1)/innorm/2.
+    pmag=(bsq*indisk).mean(axis=1)/innorm/2.
 
     # r mesh:
-    fout=open("dumps/"+fname+'_eq_r.dat', 'w')
-    for kx in arange(re.nx):
+    fout=open(fname+'_eq_r.dat', 'w')
+    for kx in arange(nx):
         if(kx%alifactor==0):
             fout.write(str(run[kx])+'\n')
     fout.close()
-    fout=open("dumps/"+fname+'_eq_phi.dat', 'w')
+    fout=open(fname+'_eq_phi.dat', 'w')
     # phi mesh
-    for kz in arange(re.nz):
+    for kz in arange(nz):
 	#        if(kz%alifactor==0):
         fout.write(str(phun[kz])+'\n')
     fout.close()
 
-    foutrho=open("dumps/"+fname+'_eq_rho.dat', 'w') # density
-    foutp=open("dumps/"+fname+'_eq_p.dat', 'w') # gas pressure
-    foutpm=open("dumps/"+fname+'_eq_pm.dat', 'w') # magnetic pressure
-    foutu=open("dumps/"+fname+'_eq_uu.dat', 'w') # contravariant velocities
-    foutd=open("dumps/"+fname+'_eq_ud.dat', 'w') # covariant velocities
-    foutup=open("dumps/"+fname+'_eq_puu.dat', 'w') # pressure-averaged contravariant velocities
-    foutdp=open("dumps/"+fname+'_eq_pud.dat', 'w') # pressure-averaged covariant velocities
+    foutrho=open(fname+'_eq_rho.dat', 'w') # density
+    foutp=open(fname+'_eq_p.dat', 'w') # gas pressure
+    foutpm=open(fname+'_eq_pm.dat', 'w') # magnetic pressure
+    foutu=open(fname+'_eq_uu.dat', 'w') # contravariant velocities
+    foutd=open(fname+'_eq_ud.dat', 'w') # covariant velocities
+    foutup=open(fname+'_eq_puu.dat', 'w') # pressure-averaged contravariant velocities
+    foutdp=open(fname+'_eq_pud.dat', 'w') # pressure-averaged covariant velocities
 
     # rho on the mesh
-    for kx in arange(re.nx):
+    for kx in arange(nx):
         if(kx%alifactor==0):
-            for kz in arange(re.nz):
+            for kz in arange(nz):
                 foutrho.write(str(rhomean[kx,kz])+'\n')
-                foutp.write(str(ugmean[kx,kz]*(re.gam-1.))+'\n')
+                foutp.write(str(ugmean[kx,kz]*(gam-1.))+'\n')
 		foutpm.write(str(pmag[kx,kz])+'\n')
                 foutu.write(str(uumean0[kx,kz])+' '+str(uumeanr[kx,kz])+' '+str(uumeanh[kx,kz])+' '+str(uumeanp[kx,kz])+'\n')
                 foutd.write(str(udmean0[kx,kz])+' '+str(udmeanr[kx,kz])+' '+str(udmeanh[kx,kz])+' '+str(udmeanp[kx,kz])+'\n')
@@ -575,18 +593,19 @@ def fromabove(fname, htor=0.1, alifactor=1):
     foutd.close()
     foutup.close()
     foutdp.close()
-    os.system('tar -cf dumps/'+fname+'_eq.tar dumps/'+fname+'_dinfo.dat dumps/'+fname+'_eq_*.dat')
+    os.system('tar -cf '+fname+'_eq.tar '+fname+'_dinfo.dat '+fname+'_eq_*.dat')
 
 # reading one frame and making it lighter and 2D and saving as an ascii
 def framerip(fname, alifactor=1):
-#    global rho, ug, uu, ud, gam, B, aphi
+    global rho, ug, uu, ud, gam, B, aphi
+
     # alifactor = alias factor, every alifactorth point in r and th will be outputted, phi averaged over
 #    rg("gdump")
 
-    re.rd("dumps/"+fname)
+    rd(fname)
 	#    print(rho)
-    run=unique(re.r) ;    hun=unique(re.h)
-    drdx=re.drdx ; uu=re.uu ; ud=re.ud ; rho=re.rho ; ug=re.ug ; B=re.B; bsq=re.bsq # can we just import all the data?
+    run=unique(r)
+    hun=unique(h)
 
     ug=ug.mean(axis=2)
 #    uu[0]*=drdx[0,0]  ; uu[1]*=drdx[1,1]  ; uu[2]*=drdx[2,2]  ; uu[3]*=drdx[3,3]  # to physical
@@ -607,37 +626,37 @@ def framerip(fname, alifactor=1):
 
     rhom=rho.mean(axis=2)
     pmag=(bsq).mean(axis=2)/2.
-    aphi=re.psicalc()
+    aphi=psicalc()
     B[1]=B[1]*drdx[1,1] ; B[2]=B[2]*drdx[2,2] ; B[3]=B[3]*drdx[3,3]
     B=B.mean(axis=3)
 #    aphi=aphi.mean(axis=2)
 
     # r mesh:
-    fout=open("dumps/"+fname+'_r.dat', 'w')
-    for kx in arange(re.nx):
+    fout=open(fname+'_r.dat', 'w')
+    for kx in arange(nx):
         if(kx%alifactor==0):
             fout.write(str(run[kx])+'\n')
     fout.close()
-    fout=open("dumps/"+fname+'_h.dat', 'w')
+    fout=open(fname+'_h.dat', 'w')
     # theta mesh
-    for ky in arange(re.ny):
+    for ky in arange(ny):
         if(ky%alifactor==0):
             fout.write(str(hun[ky])+'\n')
     fout.close()
     
-    foutrho=open("dumps/"+fname+'_rho.dat', 'w')
-    foutp=open("dumps/"+fname+'_p.dat', 'w')
-    foutpm=open("dumps/"+fname+'_pm.dat', 'w')
-    foutu=open("dumps/"+fname+'_uu.dat', 'w')
-    foutd=open("dumps/"+fname+'_ud.dat', 'w')
-    foutb=open("dumps/"+fname+'_b.dat', 'w')
+    foutrho=open(fname+'_rho.dat', 'w')
+    foutp=open(fname+'_p.dat', 'w')
+    foutpm=open(fname+'_pm.dat', 'w')
+    foutu=open(fname+'_uu.dat', 'w')
+    foutd=open(fname+'_ud.dat', 'w')
+    foutb=open(fname+'_b.dat', 'w')
     # rho on the mesh
-    for kx in arange(re.nx):
+    for kx in arange(nx):
         if(kx%alifactor==0):
-            for ky in arange(re.ny):
+            for ky in arange(ny):
                 if(ky%alifactor==0):
                     foutrho.write(str(rhom[kx,ky])+'\n')
-                    foutp.write(str(ug[kx,ky]*(re.gam-1.))+'\n')
+                    foutp.write(str(ug[kx,ky]*(gam-1.))+'\n')
                     foutpm.write(str(pmag[kx,ky]/2.)+'\n')
                     foutu.write(str(uu0[kx,ky])+' '+str(uur[kx,ky])+' '+str(uuh[kx,ky])+' '+str(uup[kx,ky])+'\n')
                     foutd.write(str(ud0[kx,ky])+' '+str(udr[kx,ky])+' '+str(udh[kx,ky])+' '+str(udp[kx,ky])+'\n')
@@ -648,7 +667,7 @@ def framerip(fname, alifactor=1):
     foutpm.close()
     foutu.close()
     foutd.close()
-    os.system('tar -cf dumps/'+fname+'.tar dumps/'+fname+'_*.dat')
+    os.system('tar -cf '+fname+'.tar '+fname+'_*.dat')
 
 # makes ascii files with degraded resolution from all the dumps
 def defaultrun():
@@ -657,28 +676,26 @@ def defaultrun():
     rref=10.
  #   os.chdir(dire)
 #    dumpinfo()
-    re.rg(dire+"gdump")
-    run=unique(re.r)
-    nr=run[where(run<rref)].argmax() # where the radius is closest to rref (from inside)
+    rg("gdump")
+    run=unique(r)
+    nr=run[where(run<rref)].argmax()
 
-    fout=open(dire+"dumps_mevol.dat", "w")
+    fout=open("dumps_mevol.dat", "w")
 
-    flist=get_sorted_file_list()
+    flist=get_sorted_file_list(prefix=dire+"/dump")
     nlist=size(flist)
-    print str(nlist)+" files"
-    print flist
     for k in arange(nlist):
-	dumpinfo("../"+flist[k])
-	framerip("../"+flist[k], alifactor=3)
+	dumpinfo(flist[k])
+	framerip(flist[k], alifactor=3)
 	maccre, mwind, laccre, lwind = mint(rref)
-	fromabove("../"+flist[k], alifactor=3)
+	fromabove(flist[k], alifactor=3)
         print "merger_remote defaultrun: reducing "+str(flist[k])
-	fout.write(str(re.t)+" "+str(maccre)+" "+str(mwind)+" "+str(laccre)+" "+str(lwind)+"\n")
+	fout.write(str(t)+" "+str(maccre)+" "+str(mwind)+" "+str(laccre)+" "+str(lwind)+"\n")
     fout.close()
 
 # produces time-averaged frames:
 def corveerun(nfirst=None, nlast=None):
-    re.rg("gdump")
+    rg("gdump")
     readndump(nfirst,nlast)
     corvee(nfirst, nlast)
     os.system('tar -cf mergereads.tar merge_*.dat')

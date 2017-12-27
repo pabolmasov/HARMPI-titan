@@ -3,3 +3,6 @@ dumps/*
 *.o
 harm
 image_interp
+gr
+maps/*
+HARMPI/*
