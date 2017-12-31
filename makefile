@@ -46,7 +46,7 @@
 USEICC = 1
 USEOMP = 0  #please do not use this option (yet), as this has not been recently tested
 USEMPI = 1
-MACHINE =suselaptop
+MACHINE =titan
 
 # Add your other choices here:
 ifeq ($(MACHINE),suselaptop)
@@ -59,6 +59,7 @@ ifeq ($(MACHINE),titan)
 MPICC =mpicc
 GSLLIB=$(HOME)/gsl/build/lib
 GSLINC=$(HOME)/gsl/build/include
+ADDCCFLAGS=-I$(GSLINC)
 else
 $(error we are on $(MACHINE); check whether there are loose spaces in the machine name!)
 exit
@@ -89,11 +90,11 @@ endif
 endif
 
 ifeq ($(USEMPI),1)
-EXTRALIBS=  -lgsl -lgslcblas -lm #-lm #-lmpi
+EXTRALIBS= -L$(GSLLIB) -lgsl -lgslcblas -lm #-lm #-lmpi
 EXTRACCFLAGS=-DMPI
 CC=$(MPICC) #/usr/local/bin/mpicc
 else
-EXTRALIBS = -lgsl -lgslcblas -lm
+EXTRALIBS = -L$(GSLLIB) -lgsl -lgslcblas -lm
 EXTRACCFLAGS = 
 endif
 
