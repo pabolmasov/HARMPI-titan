@@ -46,44 +46,56 @@
 USEICC = 1
 USEOMP = 0  #please do not use this option (yet), as this has not been recently tested
 USEMPI = 1
+MACHINE =suselaptop
+
+# Add your other choices here:
+ifeq ($(MACHINE),suselaptop)
+MPICC =/usr/lib64/mpi/gcc/openmpi/bin/mpicc
+GSLLIB=/usr/lib64 
+GSLINC=/usr/include
+ADDCCFLAGS= -fPIC -shared
+else
+ifeq ($(MACHINE),titan)
+MPICC =mpicc
 GSLLIB=$(HOME)/gsl/build/lib
 GSLINC=$(HOME)/gsl/build/include
-export LD_LIBRARY_PATH=$GSLLIB:$LD_LIBRARY_PATH
+else
+$(error we are on $(MACHINE); check whether there are loose spaces in the machine name!)
+exit
+endif
+endif
+
+export LD_LIBRARY_PATH=$(GSLLIB)
 
 ifeq ($(USEICC),1)
-CC       = mpicc
-CCFLAGS2  = -O2 #  -xhost # -restrict -no-prec-div -axCORE-AVX2 -xSSE4.2 #-O2 -xAVX 
+CC       = $(MPICC)
+CCFLAGS2  = -O2 $(ADDCCFLAGS) # -xhost -Wrestrict -I$(GSLINC) # -no-prec-div -axCORE-AVX2 -xSSE4.2 #-O2 -xAVX 
 #CCFLAGS  = -O2
 ifeq ($(USEOMP),1)
 CCFLAGS  = $(CCFLAGS2) -openmp
 else
 CCFLAGS = $(CCFLAGS2)
 endif
-
 endif
 
 ifeq ($(USEICC),0)
 CC       = gcc
-CCFLAGS1  = -g -O2 -ggdb -Wall -Wextra -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-unknown-pragmas  #-fsanitize=address -fno-omit-frame-pointer
+CCFLAGS1  = -g -O2 -ggdb -Wall -Wextra -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-unknown-pragmas  $(ADDCCFLAGS) #-fsanitize=address -fno-omit-frame-pointer
 ifeq ($(USEOMP),1)
 CCFLAGS  = $(CCFLAGS1) -fopenmp
 else
-CCFLAGS = $(CCFLAGS1)
+CCFLAGS = $(CCFLAGS1) # -I$(GSLINC)
 endif
 endif
-
 
 ifeq ($(USEMPI),1)
-EXTRALIBS= -lm  # -lmpi
+EXTRALIBS=  -lgsl -lgslcblas -lm #-lm #-lmpi
 EXTRACCFLAGS=-DMPI
-CC=mpicc #/usr/local/bin/mpicc
+CC=$(MPICC) #/usr/local/bin/mpicc
 else
-EXTRALIBS = -lm
+EXTRALIBS = -lgsl -lgslcblas -lm
 EXTRACCFLAGS = 
 endif
-
-EXTRALIBS = -L$(GSLLIB) -lm -lgsl -lgslcblas
-CCFLAGS = $(CCFLAGS1) -I$(GSLINC)
 
 CC_COMPILE  = $(CC) $(CCFLAGS) $(EXTRACCFLAGS) -c 
 CC_LOAD     = $(CC) $(CCFLAGS) $(EXTRACCFLAGS)
@@ -92,8 +104,7 @@ CC_LOAD     = $(CC) $(CCFLAGS) $(EXTRACCFLAGS)
 	$(CC_COMPILE) $*.c
 
 EXE = harm
-all: $(EXE) image_interp
-
+all: $(EXE)
 
 SRCS = \
 bounds.c coord.c diag.c dump.c fixup.c \
@@ -107,21 +118,16 @@ init.o interp.o main.o metric.o lu.o \
 phys.o ranc.o restart.o step_ch.o \
 utoprim_1dfix1.o utoprim_1dvsq2fix1.o utoprim_2d.o u2p_util.o mpi.o
 
-INCS = decs.h  defs.h  u2p_defs.h  u2p_util.h  mpi.h
+INCS = decs.h  defs.h  u2p_defs.h  u2p_util.h  mpi.h 
 
 $(OBJS) : $(INCS) makefile
 
 $(EXE): $(OBJS) $(INCS) makefile
 	$(CC_LOAD) $(OBJS) $(EXTRALIBS) -o $(EXE)
 
-
-image_interp: image_interp.c
-	$(CC_LOAD) image_interp.c $(EXTRALIBS) -o image_interp
-
 clean:
 	/bin/rm -f *.o *.il
 	/bin/rm -f $(EXE) image_interp
-
 
 newrun:
 	/bin/rm -rf dumps images ener.out

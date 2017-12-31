@@ -168,7 +168,7 @@ void init_torus()
   lim = MC ;
   failed = 0 ;	/* start slow */
   cour = .8 ;
-  dt = 1.e-5 ;
+  dt = 1.e-6 ;
   R0 = 0.0 ;
   Rin = 0.87*(1. + sqrt(1. - a*a)) ;  //.98
   Rout = 1e5;

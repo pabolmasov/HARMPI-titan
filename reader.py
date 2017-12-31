@@ -5,6 +5,19 @@ import os
 from numpy import sin, cos, tan, pi
 import numpy as np
 
+# makes a dump-file name from its number
+# probably, could be done in one line...
+def dumpname(n):
+    s=str(n)
+    if(n>0):
+        ls=int(np.floor(np.log10(np.double(n))))
+    else:
+        ls=0
+    if(ls<2):
+        s='0'*(2-ls)+s
+    s='dump'+s
+    return s
+
 #read in a dump file
 def rd(dump):
     read_file(dump,type="dump")
@@ -444,3 +457,19 @@ def myfloat(f,acc=1):
 def get_fracphi():
     fracphi = dxdxp[3,3,0,0,0]*_dx3*nz/(2*np.pi)
     return( fracphi )
+
+##########################
+# reading a four-column text file:
+def uread(infile, dims):
+    fin=open(infile, 'r')
+    s=str.split(str.strip(fin.readline()))
+    u0=int(s[0]) ; u1=int(s[1]) ; u2=int(s[2]) ; u3=int(s[3]) 
+    while(s):
+        u0=int(s[0]) ; u1=int(s[1]) ; u2=int(s[2]) ; u3=int(s[3]) 
+        s=str.split(str.strip(fin.readline()))
+    fin.close()
+    u0=reshape(asarray(u0, dtype=double), dims)
+    u1=reshape(asarray(u1, dtype=double), dims)
+    u2=reshape(asarray(u2, dtype=double), dims)
+    u3=reshape(asarray(u3, dtype=double), dims)
+    return u0, u1, u2, u3

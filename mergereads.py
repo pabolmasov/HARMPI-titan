@@ -22,7 +22,7 @@ import numpy.random
 import time
 
 import harm_script as h
-import readkit as rk
+import reader as rk
 
 # last stable orbit
 def arms(a):
@@ -1125,14 +1125,14 @@ def eqframe(prefix):
     
 
 def dumpmovie():
-    dire='titan2/'
-    n1=787
-    n2=1905
+    dire='dumps/'
+    n1=0
+    n2=340
     for k in n1+arange(n2-n1+1):
-        prefix=dire+h.dumpname(k)
+        prefix=dire+rk.dumpname(k)
         print prefix
-        eqframe(prefix)
-#        ascframe(prefix)
+#        eqframe(prefix)
+        ascframe(prefix)
         
     # then: ffmpeg -framerate 15 -pattern_type glob -i 'titan2/dump???_rho.png' -b 4096k titanic2.mp4
     # ffmpeg -framerate 15 -pattern_type glob -i 'titan2/dump???_rho.png' -b 4096k titanic2_rho_1.mp4

@@ -113,7 +113,7 @@ def glevol(nmax, rref):
     fmdot=open("merge_mevol"+str(rref)+".dat", "w")
 
     for k in arange(nmax):
-        fname=dumpname(k)
+        fname=re.dumpname(k)
 	print "reading "+str(fname)
         re.rd(fname)
 	print "rho is "+str(shape(re.rho))
@@ -133,18 +133,6 @@ def glevol(nmax, rref):
     
     fmdot.close()
 
-# makes a dump-file name from its number
-# probably, could be done in one line...
-def dumpname(n):
-    s=str(n)
-    if(n>0):
-        ls=int(floor(log10(double(n))))
-    else:
-        ls=0
-    if(ls<2):
-        s='0'*(2-ls)+s
-    s='dump'+s
-    return s
 
 def mint(rref):
     print "mint:"
@@ -185,7 +173,7 @@ def readndump(n1, n2, rref=5.0):
     n=n1+arange(nframes)
 
     for k in n:
-        fname=dumpname(k)
+        fname=re.dumpname(k)
         re.rd(fname)
         Tcalcud()
 	p=(re.gam-1.)*re.ug
@@ -453,7 +441,7 @@ def corvee(n1,n2):
     n=n1+arange(nframes)
 
     for k in n:
-        fname=dumpname(k)
+        fname=re.dumpname(k)
         re.rd(fname)
         uu=re.uu ; ud=re.ud ; rho=re.rho
         if(k==n1):
