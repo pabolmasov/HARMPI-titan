@@ -16,13 +16,16 @@ the challenge here is to get without plotting and ipython libraries; some of the
 """
 
 def get_sorted_file_list(prefix="dump"):
-    flist0 = np.sort(glob.glob( os.path.join("dumps/", "%s[0-9][0-9][0-9]"%prefix) ) )
-    flist1 = np.sort(glob.glob( os.path.join("dumps/", "%s[0-9][0-9][0-9][0-9]"%prefix) ) )
-    flist2 = np.sort(glob.glob( os.path.join("dumps/", "%s[0-9][0-9][0-9][0-9][0-9]"%prefix) ) )
+    flist0 = np.sort(glob.glob( os.path.join("dumps/", "%s[0-9][0-9][0-9]_0000"%prefix) ) )
+    flist1 = np.sort(glob.glob( os.path.join("dumps/", "%s[0-9][0-9][0-9][0-9]_0000"%prefix) ) )
+    flist2 = np.sort(glob.glob( os.path.join("dumps/", "%s[0-9][0-9][0-9][0-9][0-9]_0000"%prefix) ) )
     flist0.sort()
     flist1.sort()
     flist2.sort()
     flist = np.concatenate((flist0,flist1,flist2))
+    nlist=size(flist)
+    for k in arange(nlist):
+        flist[k]=flist[k][:-5] # cutting off the tails
     return flist
 
 def faraday():
