@@ -109,6 +109,7 @@ int main(int argc,char *argv[])
     }
 
     defcon = 1.;
+    fprintf(stderr, "dumping??DTd = %lf, tdump = %lf \n", DTd, tdump);
 	while(t < tf) {
         
         /* step variables forward in time */
@@ -117,7 +118,7 @@ int main(int argc,char *argv[])
         step_ch(&ndt1,&ndt2,&ndt3) ;
         
         //MPIMARK: need to add up nstroke's from all MPI processes AND also to *define* nstroke
-        
+        // what IS nstroke??
         if(MASTER==mpi_rank) {
             fprintf(stderr,"%10.5g %10.5g (%10.5g,%10.5g,%10.5g) %8d %10.5g\n",t,dt,ndt1,ndt2,ndt3,nstep,
                     nstroke/(2.*mpi_ntot[1]*mpi_ntot[2]*mpi_ntot[3])) ;
@@ -125,7 +126,9 @@ int main(int argc,char *argv[])
         
         //MPIMARK: need to sync up t's between MPI processes
         /* Handle output frequencies: */
+	
         if(t >= tdump) {
+	  //	  fprintf(stderr, "dumping??\n");
             diag(DUMP_OUT) ;
             tdump += DTd ;
         }
@@ -143,20 +146,22 @@ int main(int argc,char *argv[])
         }
         
         /* restart dump */
+	//	fprintf(stderr,"main: starting writing restart\n");
         nstep++ ;
         if(nstep%DTr01 == 0)
             restart_write(-1) ;
-        
+	//	fprintf(stderr,"main: finished writing restart\n");
+       
         
         /* deal with failed timestep, though we usually exit upon failure */
         if(failed) {
+	  fprintf(stderr,"FAILED!\n");
             restart_init() ;
             failed = 0 ;
             nfailed = nstep ;
             defcon = 0.3 ;
         }
         if(nstep > nfailed + DTr*4.*(1 + 1./defcon)) defcon = 1. ;
-
 
 	}
         //MPIMARK: need to add up all the steps from all MPI processes

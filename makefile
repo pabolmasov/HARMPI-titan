@@ -53,7 +53,7 @@ ifeq ($(MACHINE),suselaptop)
 MPICC =/usr/lib64/mpi/gcc/openmpi/bin/mpicc
 GSLLIB=/usr/lib64 
 GSLINC=/usr/include
-ADDCCFLAGS= -fPIC -shared
+# ADDCCFLAGS= -fPIC -shared
 else
 ifeq ($(MACHINE),titan)
 MPICC =mpicc

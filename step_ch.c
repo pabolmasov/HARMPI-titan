@@ -93,13 +93,17 @@ void step_ch(double *ndt1, double *ndt2, double *ndt3)
   if(MASTER==mpi_rank) fprintf(stderr,"h") ;
   advance(p, p, 0.5*dt, ph, ndt1, ndt2, ndt3) ;   /* time step primitive variables to the half step */
   
-    
-	fixup(ph) ;         /* Set updated densities to floor, set limit for gamma */
-	bound_prim(ph) ;    /* Set boundary conditions for primitive variables, flag bad ghost zones */
-	fixup_utoprim(ph);  /* Fix the failure points using interpolation and updated ghost zone values */
+  fixup(ph) ;         /* Set updated densities to floor, set limit for gamma */
+
+  if(MASTER==mpi_rank) fprintf(stderr,"g") ;
+
+  bound_prim(ph) ;    /* Set boundary conditions for primitive variables, flag bad ghost zones */ // stuck here!
+  if(MASTER==mpi_rank) fprintf(stderr,"G") ;
+
+  fixup_utoprim(ph);  /* Fix the failure points using interpolation and updated ghost zone values */
     
         //ZLOOP eVol(p,p,ph,0.5*dt,i,j,k,0,1); /* Account for floor heat */
-	bound_prim(ph) ;    /* Reset boundary conditions with fixed up points */
+  bound_prim(ph) ;    /* Reset boundary conditions with fixed up points */
     
     
     

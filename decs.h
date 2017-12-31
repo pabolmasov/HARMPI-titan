@@ -112,9 +112,9 @@
 #define PERIODIC (0)          /* whether or not to use periodic boundary conditions */
 #define OUTFLOW  (0)          /* whether or not to use outflow boundary conditions in all directions */
 #elif WHICHPROBLEM == TORUS_PROBLEM
-#define N1       (256)         /* number of physical zones in X1-direction */  //change back to 256x256
-#define N2       (128)         /* number of physical zones in X2-direction */
-#define N3       (128)          /* number of physical zones in X3-direction */
+#define N1       (64)         /* number of physical zones in X1-direction */  //change back to 256x256
+#define N2       (64)         /* number of physical zones in X2-direction */
+#define N3       (1)          /* number of physical zones in X3-direction */
 #define GR       (1)          /* whether or not to use GR */
 #define BL       (1)          /* whether or not to use BL coords */
 #define INFLOW   (0)          /* whether or not to allow inflow at boundaries */
@@ -324,10 +324,10 @@
 
 /* specialty loop */
 extern int istart,istop,jstart,jstop,kstart,kstop ;
-#define ZSLOOP(istart,istop,jstart,jstop,kstart,kstop)\
-  for(i=istart;i<=istop;i++)			      \
-    for(j=jstart;j<=jstop;j++)			      \
-      for(k=kstart;k<=kstop;k++)
+#define ZSLOOP(istart,istop,jstart,jstop,kstart,kstop) \
+for(i=istart;i<=istop;i++)\
+for(j=jstart;j<=jstop;j++)\
+for(k=kstart;k<=kstop;k++)
 
 /* loop over Primitive variables */
 #define PLOOP  for(m=0;m<NPR;m++)
@@ -363,18 +363,17 @@ typedef double gdump2type;
 typedef double rdumptype;
 typedef long long fdumptype;
 
+#ifdef MPI
+///////////////////////////////////////////////
+// how to write dumps and gdumps in parallel
+#define DO_PARALLEL_WRITE (0)
+
 extern void *mpi_file_buffer;
 extern dumptype *dump_buffer;
 extern gdumptype *gdump_buffer;
 extern gdump2type *gdump2_buffer;
 extern rdumptype *rdump_buffer;
 extern fdumptype *fdump_buffer;
-
-#ifdef MPI
-///////////////////////////////////////////////
-// how to write dumps and gdumps in parallel
-#define DO_PARALLEL_WRITE (1)
-
 
 #define MPI_DUMP_TYPE MPI_FLOAT
 #define MPI_GDUMP_TYPE MPI_FLOAT

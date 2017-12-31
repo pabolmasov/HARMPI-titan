@@ -143,6 +143,7 @@ void init_torus()
 
   int nloops=10; /* number of loops; nloops=0 reproduces the default behaviour  */
   int evenloops=1;
+  int kloop;
   double zloop, rloop, aplus;
   
   int iglob, jglob, kglob;
@@ -374,27 +375,6 @@ void init_torus()
   ZSLOOP(0,N1-1+D1,0,N2-1+D2,0,N3-1+D3) A[i][j][k] = 0. ;
   if(nloops<1)
     {
-	/* radial field version */
-	/*
-          coord(i,j,k,CORN,X) ;
-          bl_coord(X,&r,&th,&phi) ;
-	  
-          A[i][j][k] = (1-cos(th)) ;
-          */
-
-    
-          /* vertical field version */
-          /*
-          coord(i,j,k,CORN,X) ;
-          bl_coord(X,&r,&th,&phi) ;
-
-          A[i][j][k] = r*r*sin(th)*sin(th) ;
-          */
-    
-
-          /* field-in-disk version */
-          /* flux_ct */
-    
       ZSLOOP(0,N1-1+D1,0,N2-1+D2,0,N3-1+D3) {
       //cannot use get_phys_coords() here because it can only provide coords at CENT
 	coord(i,j,k,CORN,X) ;
@@ -414,7 +394,7 @@ void init_torus()
       }
     }
   if(nloops>=1){
-    for(int kloop=0; kloop<nloops; kloop++){
+    for(kloop=0; kloop<nloops; kloop++){
       rloop=(double)rand()/(double)RAND_MAX; zloop=(double)rand()/(double)RAND_MAX;
       rloop=rloop*(rmax*rmax/rin-rin)+rin; zloop=(zloop-0.5)*rmax;
       q=(double)rand()/(double)RAND_MAX-0.5;

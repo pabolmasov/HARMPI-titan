@@ -66,7 +66,7 @@ int mpi_init(int argc,char *argv[])
     mpi_dims[dim] = atoi(argv[dim]);
     ntiles *= mpi_dims[dim];
   }
-
+  
   mpi_ntile[1] = N1;
   mpi_ntile[2] = N2;
   mpi_ntile[3] = N3;
@@ -110,11 +110,14 @@ int mpi_init(int argc,char *argv[])
   fflush(stdout);
   //sleep(20);
 
+  //  fprintf(stderr, "outofbound = %d\n", MPI_UNDEFINED);
   //compute and store neighbor ranks: 3 dimensions times 2 directions per dimension
   for( dim = 1; dim < NDIM; dim++) {
     MPI_Cart_shift(mpi_cartcomm, dim-1, 1, &mpi_nbrs[dim][0], &mpi_nbrs[dim][1]);
+    // fprintf(stderr, "dim = %d, rank=%d: neighbouring %d and %d\n", dim, mpi_rank, mpi_nbrs[dim][0], mpi_nbrs[dim][1]);
     //starting value of index
     mpi_startn[dim] = mpi_coords[dim]*mpi_ntile[dim];
+    //   fprintf(stderr, "starting pixel dimension %d = %d\n", dim, mpi_startn[dim]);
   }
   
 #else
