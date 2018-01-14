@@ -128,12 +128,13 @@ def glevol(nmax, rref):
         # do we need to multiply this by drdx??
         #        uum[0]=(uu[0]*drdx[0,0]).mean(axis=3) ;    uum[1]=(uu[1]*drdx[1,1]).mean(axis=3)
         #        uum[2]=(uu[2]*drdx[2,2]).mean(axis=3) ;    uum[2]=(uu[2]*drdx[2,2]).mean(axis=3)
-	maccre=-trapz((rhom*uum[1]*(uum[1]<0.)*sqrt(gdet/gcov[1,1]))[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
-	maccre_south=-trapz((rhom_south*uum[1]*(uum[1]<0.)*sqrt(gdet/gcov[1,1]))[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
-	maccre_east=-trapz((rhom_east*uum[1]*(uum[1]<0.)*sqrt(gdet/gcov[1,1]))[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
-        mwind=-trapz((rhom*uum[1]*(uum[1]>0.)*sqrt(gdet/gcov[1,1]))[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
-        laccre=-trapz((rho*fabs(ud[3]/ud[0])*uu[1]*(uu[1]<0.)*sqrt(gdet/gcov[1,1]))[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
-	lwind=-trapz((rho*fabs(ud[3]/ud[0])*uu[1]*(uu[1]>0.)*sqrt(gdet/gcov[1,1]))[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
+        gm=sqrt(gdet/gcov[1,1])[:,0,:]
+	maccre=-trapz((rhom*uum[1]*(uum[1]<0.)*gm)[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
+	maccre_south=-trapz((rhom_south*uum[1]*(uum[1]<0.)*gm)[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
+	maccre_east=-trapz((rhom_east*uum[1]*(uum[1]<0.)*gm)[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
+        mwind=-trapz((rhom*uum[1]*(uum[1]>0.)*gm)[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
+        laccre=-trapz((rho*fabs(ud[3]/ud[0])*uu[1]*(uu[1]<0.)*sqrt(gdet/gcov[1,1])).mean(axis=2)[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
+	lwind=-trapz((rho*fabs(ud[3]/ud[0])*uu[1]*(uu[1]>0.)*sqrt(gdet/gcov[1,1])).mean(axis=2)[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
         # maccre=-((rho*uu[1]*sqrt(gdet/gcov[1,1]))[nr,:,:]).sum()*_dx2*_dx3
         fmdot.write(str(t)+" "+str(maccre)+" "+str(mwind)+" "+str(laccre/maccre)+" "+str(lwind/mwind)+" "+str(maccre_south)+" "+str(maccre_east)+"\n")
     
