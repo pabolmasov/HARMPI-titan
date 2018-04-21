@@ -1,3 +1,8 @@
+from __future__ import print_function
+from __future__ import division
+from builtins import str
+from builtins import range
+from past.utils import old_div
 import sys
 import glob
 import os
@@ -54,7 +59,7 @@ def read_file(dump,type=None,savedump=True,saverdump=False,noround=False):
             type = "dump"
     #normal dump
     if os.path.isfile( "dumps/" + dump ):
-        headerline = read_header("dumps/" + dump, returnheaderline = True)
+        headerline = read_header("dumps/" + dump, returnheaderline = True, issilent=False)
         gd = read_body("dumps/" + dump,nx=N1+2*N1G,ny=N2+2*N2G,nz=N3+2*N3G,noround=1)
         if noround:
             res = data_assign(         gd,type=type,nx=N1+2*N1G,ny=N2+2*N2G,nz=N3+2*N3G)
@@ -70,7 +75,7 @@ def read_file(dump,type=None,savedump=True,saverdump=False,noround=False):
         sys.stdout.write( "Reading %s (%d files)" % (dump, len(flist)) )
         sys.stdout.flush()
         ndots = 10
-        dndot = len(flist)/ndots
+        dndot = old_div(len(flist),ndots)
         if dndot == 0: dndot = 1
         for i,fname in enumerate(flist):
             #print( "Reading file %d out of %d..." % (i,len(flist)) )
@@ -93,7 +98,7 @@ def read_file(dump,type=None,savedump=True,saverdump=False,noround=False):
                 ltk = np.int64(ltk)
                 fgd[:,lti+N1G,ltj+N2G,ltk+N3G] = lgd[:,:,:,:]
             else:
-                print starti,startj,startk
+                print(starti,startj,startk)
                 fgd[:,starti:starti+N1+2*N1G,startj:startj+N2+2*N2G,startk:startk+N3+2*N3G] = lgd[:,:,:,:]
             del lgd
             if i%dndot == 0:
@@ -113,7 +118,7 @@ def read_file(dump,type=None,savedump=True,saverdump=False,noround=False):
                 #join header items with " " (space) as a glue
                 #see http://stackoverflow.com/questions/12377473/python-write-versus-writelines-and-concatenated-strings
                 #write it out with a new line char at the end
-                fout.write(" ".join(header) + "\n")
+                fout.write(b' '.join(header) + b'\n')
                 fout.flush()
                 os.fsync(fout.fileno())
                 #reshape the dump content
@@ -359,6 +364,7 @@ def dump_assign(gd,**kwargs):
     origin_r = gd[n] ; n+=1
     origin_th = gd[n] ; n+=1
     origin_phi = gd[n] ; n+=1
+    origin_r /= rho ; origin_th /= rho ; origin_phi /= rho
     #if total entropy equation is evolved (on by default)
     if DOKTOT == 1:
       ktot = gd[n]; n+=1

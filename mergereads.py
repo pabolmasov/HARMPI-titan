@@ -1,3 +1,8 @@
+from __future__ import print_function
+from __future__ import division
+from builtins import str
+from builtins import zip
+from past.utils import old_div
 import matplotlib
 from matplotlib import rc
 from matplotlib import axes
@@ -26,7 +31,7 @@ import reader as rk
 
 # last stable orbit
 def arms(a):
-    z1=1.+(1.-a*a)**(1./3.)*((1.+a)**(1./3.)+(1.-a)**(1./3.))
+    z1=1.+(1.-a*a)**(old_div(1.,3.))*((1.+a)**(old_div(1.,3.))+(1.-a)**(old_div(1.,3.)))
     z2=sqrt(3.*a*a+z1*z1)
 #    if (a>0.):
 #        r=3.+z2-sqrt((3.-z1)*(3.+z1+2.*z2)) 
@@ -57,7 +62,7 @@ def dinforead(prefix):
         t=double(s[0])
     else:
         t=0.
-    print "Kerr a = "+str(a)
+    print("Kerr a = "+str(a))
     fd.close()
     return nr, nh, nphi, a, t
 
@@ -87,8 +92,8 @@ def tedplotter(dire):
     
     # 2d-grid (order??)
     h2,r2=meshgrid(th,r)
-    print shape(r2)
-    print nr, nh
+    print(shape(r2))
+    print(nr, nh)
 
     # pressure:
     pfile='/home/pasha/harm/harmpi/'+dire+'/merge_p.dat'
@@ -142,7 +147,7 @@ def tedplotter(dire):
     alevs1=1e-3*0.5
     alevs2=1.0*0.5
     na=30
-    alevs=(alevs2/alevs1)**(arange(na)/double(na-1))*alevs1
+    alevs=(old_div(alevs2,alevs1))**(old_div(arange(na),double(na-1)))*alevs1
     alevs=around(alevs, 3)
     alevs[0]=0.
     alevs=unique(alevs)
@@ -155,23 +160,23 @@ def tedplotter(dire):
     clf()
     fig=figure()
     subplot(121)
-    contourf(r2*sin(h2), r2*cos(h2),fabs((trp+emtrp)/p), levels=alevs, norm=norm, cmap=cmap)
+    contourf(r2*sin(h2), r2*cos(h2),fabs(old_div((trp+emtrp),p)), levels=alevs, norm=norm, cmap=cmap)
     colorbar()
-    contour(r2*sin(h2), r2*cos(h2),((trp+emtrp)/p), colors='w', levels=[0.])
+    contour(r2*sin(h2), r2*cos(h2),(old_div((trp+emtrp),p)), colors='w', levels=[0.])
     contour(r2*sin(h2), r2*cos(h2),p, colors='w', linestyles='dotted')
     xlim(0., rmax)
-    ylim(-rmax/2., rmax/2.)
+    ylim(old_div(-rmax,2.), old_div(rmax,2.))
     xlabel(r'$\varpi$')
     ylabel(r'$z$')
     bhole(rhor)
     title(r'$\alpha_{r\varphi}$')
     subplot(122)
-    contourf(r2*sin(h2), r2*cos(h2),fabs((thp+emthp)/p), levels=alevs, norm=norm, cmap=cmap)
+    contourf(r2*sin(h2), r2*cos(h2),fabs(old_div((thp+emthp),p)), levels=alevs, norm=norm, cmap=cmap)
     colorbar()
-    contour(r2*sin(h2), r2*cos(h2),((thp+emthp)/p), colors='w', levels=[0.])
+    contour(r2*sin(h2), r2*cos(h2),(old_div((thp+emthp),p)), colors='w', levels=[0.])
     contour(r2*sin(h2), r2*cos(h2),p, colors='w', linestyles='dotted')
     xlim(0., rmax)
-    ylim(-rmax/2., rmax/2.)
+    ylim(old_div(-rmax,2.), old_div(rmax,2.))
     xlabel(r'$\varpi$')
     ylabel(r'$z$')
     bhole(rhor)
@@ -304,19 +309,19 @@ def velevol():
     pvxCflow=(purC*sin(h2)+puhC*cos(h2)).flatten() ; pvyCflow=(-puhC*sin(h2)+purC*cos(h2)).flatten()
     vxDflow=(urD*sin(h2)+uhD*cos(h2)).flatten() ; vyDflow=(-uhD*sin(h2)+urD*cos(h2)).flatten()
     pvxDflow=(purD*sin(h2)+puhD*cos(h2)).flatten() ; pvyDflow=(-puhD*sin(h2)+purD*cos(h2)).flatten()
-    vxA=griddata(zip(xgrid, ygrid),vxAflow, (x2,y2),method='nearest') ; vyA=griddata(zip(xgrid, ygrid),vyAflow, (x2,y2),method='nearest')
-    pvxA=griddata(zip(xgrid, ygrid),pvxAflow, (x2,y2),method='nearest') ; pvyA=griddata(zip(xgrid, ygrid),pvyAflow, (x2,y2),method='nearest')
-    vxB=griddata(zip(xgrid, ygrid),vxBflow, (x2,y2),method='nearest') ; vyB=griddata(zip(xgrid, ygrid),vyBflow, (x2,y2),method='nearest')
-    pvxB=griddata(zip(xgrid, ygrid),pvxBflow, (x2,y2),method='nearest') ; pvyB=griddata(zip(xgrid, ygrid),pvyBflow, (x2,y2),method='nearest')
-    vxC=griddata(zip(xgrid, ygrid),vxCflow, (x2,y2),method='nearest') ; vyC=griddata(zip(xgrid, ygrid),vyCflow, (x2,y2),method='nearest')
-    pvxC=griddata(zip(xgrid, ygrid),pvxCflow, (x2,y2),method='nearest') ; pvyC=griddata(zip(xgrid, ygrid),pvyCflow, (x2,y2),method='nearest')
-    vxD=griddata(zip(xgrid, ygrid),vxDflow, (x2,y2),method='nearest') ; vyD=griddata(zip(xgrid, ygrid),vyDflow, (x2,y2),method='nearest')
-    pvxD=griddata(zip(xgrid, ygrid),pvxDflow, (x2,y2),method='nearest') ; pvyD=griddata(zip(xgrid, ygrid),pvyDflow, (x2,y2),method='nearest')
+    vxA=griddata(list(zip(xgrid, ygrid)),vxAflow, (x2,y2),method='nearest') ; vyA=griddata(list(zip(xgrid, ygrid)),vyAflow, (x2,y2),method='nearest')
+    pvxA=griddata(list(zip(xgrid, ygrid)),pvxAflow, (x2,y2),method='nearest') ; pvyA=griddata(list(zip(xgrid, ygrid)),pvyAflow, (x2,y2),method='nearest')
+    vxB=griddata(list(zip(xgrid, ygrid)),vxBflow, (x2,y2),method='nearest') ; vyB=griddata(list(zip(xgrid, ygrid)),vyBflow, (x2,y2),method='nearest')
+    pvxB=griddata(list(zip(xgrid, ygrid)),pvxBflow, (x2,y2),method='nearest') ; pvyB=griddata(list(zip(xgrid, ygrid)),pvyBflow, (x2,y2),method='nearest')
+    vxC=griddata(list(zip(xgrid, ygrid)),vxCflow, (x2,y2),method='nearest') ; vyC=griddata(list(zip(xgrid, ygrid)),vyCflow, (x2,y2),method='nearest')
+    pvxC=griddata(list(zip(xgrid, ygrid)),pvxCflow, (x2,y2),method='nearest') ; pvyC=griddata(list(zip(xgrid, ygrid)),pvyCflow, (x2,y2),method='nearest')
+    vxD=griddata(list(zip(xgrid, ygrid)),vxDflow, (x2,y2),method='nearest') ; vyD=griddata(list(zip(xgrid, ygrid)),vyDflow, (x2,y2),method='nearest')
+    pvxD=griddata(list(zip(xgrid, ygrid)),pvxDflow, (x2,y2),method='nearest') ; pvyD=griddata(list(zip(xgrid, ygrid)),pvyDflow, (x2,y2),method='nearest')
    
-    uratA=(purA*urA+puhA*uhA)/(urA**2+uhA**2)
-    uratB=(purB*urB+puhB*uhB)/(urB**2+uhB**2)
-    uratC=(purC*urC+puhC*uhC)/(urC**2+uhC**2)
-    uratD=(purD*urD+puhD*uhD)/(urD**2+uhD**2)
+    uratA=old_div((purA*urA+puhA*uhA),(urA**2+uhA**2))
+    uratB=old_div((purB*urB+puhB*uhB),(urB**2+uhB**2))
+    uratC=old_div((purC*urC+puhC*uhC),(urC**2+uhC**2))
+    uratD=old_div((purD*urD+puhD*uhD),(urD**2+uhD**2))
  
     cmap = plt.get_cmap('jet') ; cmap.set_bad('white',1.)
     vratmin=-0.1 # uratA[where((r2<xscale)*(h2<hdisk))].min()
@@ -416,10 +421,10 @@ def mplotter(dire,nope=False):
         rrangemin=10. ; rrangemax=12.
         rrange=double((r2>rrangemin)*(r2<rrangemax))
         # averaging over radial velocity
-        vtracemean=(vtrace*rho*rrange).mean(axis=0)/(rho*rrange).mean(axis=0)
-        urmean=(ur*rho*rrange).mean(axis=0)/(rho*rrange).mean(axis=0)
-        upmean=(up*rho*rrange).mean(axis=0)/(rho*rrange).mean(axis=0)
-        uhmean=(uh*rho*rrange).mean(axis=0)/(rho*rrange).mean(axis=0)
+        vtracemean=old_div((vtrace*rho*rrange).mean(axis=0),(rho*rrange).mean(axis=0))
+        urmean=old_div((ur*rho*rrange).mean(axis=0),(rho*rrange).mean(axis=0))
+        upmean=old_div((up*rho*rrange).mean(axis=0),(rho*rrange).mean(axis=0))
+        uhmean=old_div((uh*rho*rrange).mean(axis=0),(rho*rrange).mean(axis=0))
         th=unique(h2)
         fig=figure()
         clf()
@@ -440,13 +445,13 @@ def mplotter(dire,nope=False):
         close()
         
     ono=20 # number of angular frequency levels
-    rmin=h.Risco(a)/2.
+    rmin=old_div(h.Risco(a),2.)
     rhor = 1.+(1.-a**2)**0.5
         
     rmax=20.
-    rlevs=(rmax/rmin*1.5)**(arange(ono)/double(ono))*rmin
+    rlevs=(rmax/rmin*1.5)**(old_div(arange(ono),double(ono)))*rmin
     
-    olevs=1./(rlevs**1.5+a)
+    olevs=old_div(1.,(rlevs**1.5+a))
     olevs=olevs[::-1]
     olevs[ono-1]=olevs.max()*10.
     cmap = plt.get_cmap('jet')
@@ -460,20 +465,20 @@ def mplotter(dire,nope=False):
     contourf(r2*sin(h2), r2*cos(h2), log10(rho+1e-3), cmap=cmap, nlevels=30)
     contour(r2*sin(h2), r2*cos(h2), aphi, colors='k')
     xlim(0., rmax)
-    ylim(-rmax/2., rmax/2.)
+    ylim(old_div(-rmax,2.), old_div(rmax,2.))
     xlabel(r'$\varpi$')
     ylabel(r'$z$')
     bhole(rhor)
     savefig('/home/pasha/harm/harmpi/'+dire+'/rho.eps')
     # beta magnetization plot:
     beta1=0.1 ; beta2=100. ; nbeta=30
-    betalevs=log10((beta2/beta1)**(arange(nbeta)/double(nbeta-1))*beta1)
+    betalevs=log10((old_div(beta2,beta1))**(old_div(arange(nbeta),double(nbeta-1)))*beta1)
     clf()
-    contourf(r2*sin(h2), r2*cos(h2), log10(p/pm),levels=betalevs)
+    contourf(r2*sin(h2), r2*cos(h2), log10(old_div(p,pm)),levels=betalevs)
     colorbar()
-    contour(r2*sin(h2), r2*cos(h2), log10(p/pm),levels=[0.], colors='w', linewidths=2.)
+    contour(r2*sin(h2), r2*cos(h2), log10(old_div(p,pm)),levels=[0.], colors='w', linewidths=2.)
     xlim(0., rmax)
-    ylim(-rmax/2., rmax/2.)
+    ylim(old_div(-rmax,2.), old_div(rmax,2.))
     xlabel(r'$\varpi$')
     ylabel(r'$z$')
     bhole(rhor)
@@ -483,7 +488,7 @@ def mplotter(dire,nope=False):
     fig=figure()
     contourf(r2*sin(h2), r2*cos(h2), up,levels=olevs,norm=norm)
     colorbar()
-    contour(r2*sin(h2), r2*cos(h2), 1./((r2*sin(h2))**1.5+a), colors='k',levels=olevs,linewidths=1)
+    contour(r2*sin(h2), r2*cos(h2), old_div(1.,((r2*sin(h2))**1.5+a)), colors='k',levels=olevs,linewidths=1)
     contour(r2*sin(h2), r2*cos(h2), log10(rho+1e-3), colors='w')
     xlim(0., 20.)
     ylim(-10., 10.)
@@ -499,8 +504,8 @@ def mplotter(dire,nope=False):
     hdisk=0.25
     wdisk=double(fabs(cos(h2))<hdisk)
     wwind=double(fabs(cos(h2))>hdisk)
-    urmean=((rho*ur)*wdisk).mean(axis=1)/(rho*wdisk).mean(axis=1)
-    urmeanp=((p*pur)*wdisk).mean(axis=1)/(p*wdisk).mean(axis=1)
+    urmean=old_div(((rho*ur)*wdisk).mean(axis=1),(rho*wdisk).mean(axis=1))
+    urmeanp=old_div(((p*pur)*wdisk).mean(axis=1),(p*wdisk).mean(axis=1))
 
     # flow lines:
     nx=20 ; ny=21
@@ -519,14 +524,14 @@ def mplotter(dire,nope=False):
     pvxflow=(pur/cs*sin(h2)+puh/cs*cos(h2)).flatten()
     pvyflow=(-puh/cs*sin(h2)+pur/cs*cos(h2)).flatten()
 #    vxflow=xgrid ; vyflow=ygrid
-    vx=griddata(zip(xgrid, ygrid),vxflow, (x2,y2),method='nearest')
-    vy=griddata(zip(xgrid, ygrid),vyflow, (x2,y2),method='nearest')
-    pvx=griddata(zip(xgrid, ygrid),pvxflow, (x2,y2),method='nearest')
-    pvy=griddata(zip(xgrid, ygrid),pvyflow, (x2,y2),method='nearest')
+    vx=griddata(list(zip(xgrid, ygrid)),vxflow, (x2,y2),method='nearest')
+    vy=griddata(list(zip(xgrid, ygrid)),vyflow, (x2,y2),method='nearest')
+    pvx=griddata(list(zip(xgrid, ygrid)),pvxflow, (x2,y2),method='nearest')
+    pvy=griddata(list(zip(xgrid, ygrid)),pvyflow, (x2,y2),method='nearest')
 
     vmin=1e-8 # sqrt((vx**2+vy**2)).min()*9.
     vmax=0.1 # sqrt((vx**2+vy**2)).max()*1.1
-    vlevs=log10((vmax/vmin)**(arange(20)/double(19))*vmin)
+    vlevs=log10((old_div(vmax,vmin))**(old_div(arange(20),double(19)))*vmin)
     vlevs[0]=-30.
     norm = BoundaryNorm(vlevs, ncolors=cmap.N, clip=True)
     #    vmax=0.01
@@ -536,7 +541,7 @@ def mplotter(dire,nope=False):
     
     clf()
     fig=figure()
-    contourf(r2*sin(h2), r2*cos(h2), log10(sqrt(ur**2+uh**2)/cs),levels=vlevs,norm=norm)
+    contourf(r2*sin(h2), r2*cos(h2), log10(old_div(sqrt(ur**2+uh**2),cs)),levels=vlevs,norm=norm)
 #    contourf(xflow, yflow, sqrt(vx**2+vy**2),levels=vlevs,norm=norm)
     colorbar()
     streamplot(xflow, yflow, pvx, pvy,color='k')
@@ -555,10 +560,10 @@ def mplotter(dire,nope=False):
     ny=5
     xflow=xscale*(arange(nx))/double(nx-1) ;   yflow=xscale*hdisk*((arange(ny))/double(ny-1)*2.-1.)
     x2,y2=meshgrid(xflow, yflow)    
-    vx=griddata(zip(xgrid, ygrid),vxflow, (x2,y2),method='nearest')
-    vy=griddata(zip(xgrid, ygrid),vyflow, (x2,y2),method='nearest')
-    pvx=griddata(zip(xgrid, ygrid),pvxflow, (x2,y2),method='nearest')
-    pvy=griddata(zip(xgrid, ygrid),pvyflow, (x2,y2),method='nearest')
+    vx=griddata(list(zip(xgrid, ygrid)),vxflow, (x2,y2),method='nearest')
+    vy=griddata(list(zip(xgrid, ygrid)),vyflow, (x2,y2),method='nearest')
+    pvx=griddata(list(zip(xgrid, ygrid)),pvxflow, (x2,y2),method='nearest')
+    pvy=griddata(list(zip(xgrid, ygrid)),pvyflow, (x2,y2),method='nearest')
     vratmin=0.6 # 0.2
     vratmax=1.1 # 1.
     nv=10
@@ -567,9 +572,9 @@ def mplotter(dire,nope=False):
     clf()
     fig=figure()
     # (sqrt(pur**2+puh**2))/(sqrt(ur**2+uh**2))
-    contourf(r2*sin(h2), r2*cos(h2), pur/ur, levels=vratlevs, cmap='jet')
+    contourf(r2*sin(h2), r2*cos(h2), old_div(pur,ur), levels=vratlevs, cmap='jet')
     colorbar()
-    contour(r2*sin(h2), r2*cos(h2), pur/ur, levels=[1.], colors='w')
+    contour(r2*sin(h2), r2*cos(h2), old_div(pur,ur), levels=[1.], colors='w')
     plot([0.,xscale], [0.,0.], color='k', linestyle='dotted')
 #    streamplot(xflow, yflow, pvx, pvy,color='k')
     streamplot(xflow, yflow, vx, vy,color='k')
@@ -590,9 +595,9 @@ def mplotter(dire,nope=False):
     clf()
     fig=figure()
     # (sqrt(pur**2+puh**2))/(sqrt(ur**2+uh**2))
-    contourf(r2*sin(h2), r2*cos(h2), mpur/pur, levels=vratlevs, cmap='jet')
+    contourf(r2*sin(h2), r2*cos(h2), old_div(mpur,pur), levels=vratlevs, cmap='jet')
     colorbar()
-    contour(r2*sin(h2), r2*cos(h2), mpur/pur, levels=[1.], colors='w')
+    contour(r2*sin(h2), r2*cos(h2), old_div(mpur,pur), levels=[1.], colors='w')
     plot([0.,xscale], [0.,0.], color='k', linestyle='dotted')
 #    streamplot(xflow, yflow, pvx, pvy,color='k')
     streamplot(xflow, yflow, vx, vy,color='k')
@@ -609,10 +614,10 @@ def mplotter(dire,nope=False):
 
     # vertical slice:
     rrange=double((r2>5.)*(r2<10.))
-    urhmean=(ur*rho*rrange).mean(axis=0)/(rho*rrange).mean(axis=0)
-    uhhmean=(uh*rho*rrange).mean(axis=0)/(rho*rrange).mean(axis=0)
-    urhmeanp=(pur*p*rrange).mean(axis=0)/(p*rrange).mean(axis=0)
-    uhhmeanp=(puh*p*rrange).mean(axis=0)/(p*rrange).mean(axis=0)
+    urhmean=old_div((ur*rho*rrange).mean(axis=0),(rho*rrange).mean(axis=0))
+    uhhmean=old_div((uh*rho*rrange).mean(axis=0),(rho*rrange).mean(axis=0))
+    urhmeanp=old_div((pur*p*rrange).mean(axis=0),(p*rrange).mean(axis=0))
+    uhhmeanp=old_div((puh*p*rrange).mean(axis=0),(p*rrange).mean(axis=0))
     #    print shape(urhmean)
     #    print shape(h)
     th=unique(h2)
@@ -628,7 +633,7 @@ def mplotter(dire,nope=False):
     ylim(-0.035,0.005)
     xlim(-hdisk, hdisk)
     subplot(212)
-    plot(cos(th), urhmeanp/urhmean, color='k')
+    plot(cos(th), old_div(urhmeanp,urhmean), color='k')
     xlabel(r'$\cos\theta$')
     ylabel(r'$\langle u^r\rangle_p / \langle u^r\rangle_\rho$')
     xlim(-hdisk, hdisk)
@@ -652,7 +657,7 @@ def mplotter(dire,nope=False):
     vmin=1e-8
     vmax=10.
     ono=100
-    vlevs=(vmax/vmin)**(arange(ono)/double(ono-1))*vmin
+    vlevs=(old_div(vmax,vmin))**(old_div(arange(ono),double(ono-1)))*vmin
     norm = BoundaryNorm(vlevs, ncolors=cmap.N, clip=True)
     if(dmatrix&False):
         clf()
@@ -670,14 +675,14 @@ def mplotter(dire,nope=False):
         bhole(rhor)
         savefig('/home/pasha/harm/harmpi/'+dire+'/vturb.eps')
         close()
-        vlevs=(2.*(arange(ono)/double(ono-1))-1.)*0.5
+        vlevs=(2.*(old_div(arange(ono),double(ono-1)))-1.)*0.5
         vlevs[0]=-1.
         vlevs[ono-1]=1.
         norm = BoundaryNorm(vlevs, ncolors=cmap.N, clip=True)
         clf()
         fig=figure()
         subplot(331)
-        contourf(r2*sin(h2), r2*cos(h2), dxy[0,0]/vtrace,levels=vlevs,norm=norm)
+        contourf(r2*sin(h2), r2*cos(h2), old_div(dxy[0,0],vtrace),levels=vlevs,norm=norm)
         contour(r2*sin(h2), r2*cos(h2), log10(rho+1e-3), colors='w',linestyles='dotted')
         title(r'$\Delta_{rr}$')
         xlim(0., 20.)
@@ -686,7 +691,7 @@ def mplotter(dire,nope=False):
         ylabel(r'$z$')
         bhole(rhor)
         subplot(332)
-        contourf(r2*sin(h2), r2*cos(h2), dxy[0,1]/vtrace,levels=vlevs,norm=norm)
+        contourf(r2*sin(h2), r2*cos(h2), old_div(dxy[0,1],vtrace),levels=vlevs,norm=norm)
         contour(r2*sin(h2), r2*cos(h2), log10(rho+1e-3), colors='w',linestyles='dotted')
         title(r'$\Delta_{r\theta}$')
         xlim(0., 20.)
@@ -695,7 +700,7 @@ def mplotter(dire,nope=False):
         ylabel(r'$z$')
         bhole(rhor)
         subplot(333)
-        contourf(r2*sin(h2), r2*cos(h2), dxy[0,2]/vtrace,levels=vlevs,norm=norm)
+        contourf(r2*sin(h2), r2*cos(h2), old_div(dxy[0,2],vtrace),levels=vlevs,norm=norm)
         contour(r2*sin(h2), r2*cos(h2), log10(rho+1e-3), colors='w',linestyles='dotted')
         title(r'$\Delta_{r\varphi}$')
         xlim(0., 20.)
@@ -704,7 +709,7 @@ def mplotter(dire,nope=False):
         ylabel(r'$z$')
         bhole(rhor)
         subplot(334)
-        contourf(r2*sin(h2), r2*cos(h2), dxy[1,0]/vtrace,levels=vlevs,norm=norm)
+        contourf(r2*sin(h2), r2*cos(h2), old_div(dxy[1,0],vtrace),levels=vlevs,norm=norm)
         contour(r2*sin(h2), r2*cos(h2), log10(rho+1e-3), colors='w',linestyles='dotted')
         title(r'$\Delta_{\theta r}$')
         xlim(0., 20.)
@@ -713,7 +718,7 @@ def mplotter(dire,nope=False):
         ylabel(r'$z$')
         bhole(rhor)
         subplot(335)
-        contourf(r2*sin(h2), r2*cos(h2), dxy[1,1]/vtrace,levels=vlevs,norm=norm)
+        contourf(r2*sin(h2), r2*cos(h2), old_div(dxy[1,1],vtrace),levels=vlevs,norm=norm)
         contour(r2*sin(h2), r2*cos(h2), log10(rho+1e-3), colors='w',linestyles='dotted')
         title(r'$\Delta_{\theta\theta}$')
         xlim(0., 20.)
@@ -722,7 +727,7 @@ def mplotter(dire,nope=False):
         ylabel(r'$z$')
         bhole(rhor)
         subplot(336)
-        contourf(r2*sin(h2), r2*cos(h2), dxy[1,2]/vtrace,levels=vlevs,norm=norm)
+        contourf(r2*sin(h2), r2*cos(h2), old_div(dxy[1,2],vtrace),levels=vlevs,norm=norm)
         contour(r2*sin(h2), r2*cos(h2), log10(rho+1e-3), colors='w',linestyles='dotted')
         title(r'$\Delta_{\theta\varphi}$')
         xlim(0., 20.)
@@ -731,7 +736,7 @@ def mplotter(dire,nope=False):
         ylabel(r'$z$')
         bhole(rhor)
         subplot(337)
-        contourf(r2*sin(h2), r2*cos(h2), dxy[2,0]/vtrace,levels=vlevs,norm=norm)
+        contourf(r2*sin(h2), r2*cos(h2), old_div(dxy[2,0],vtrace),levels=vlevs,norm=norm)
         contour(r2*sin(h2), r2*cos(h2), log10(rho+1e-3), colors='w',linestyles='dotted')
         title(r'$\Delta_{\varphi r}$')
         xlim(0., 20.)
@@ -740,7 +745,7 @@ def mplotter(dire,nope=False):
         ylabel(r'$z$')
         bhole(rhor)
         subplot(338)
-        contourf(r2*sin(h2), r2*cos(h2), dxy[2,1]/vtrace,levels=vlevs,norm=norm)
+        contourf(r2*sin(h2), r2*cos(h2), old_div(dxy[2,1],vtrace),levels=vlevs,norm=norm)
         contour(r2*sin(h2), r2*cos(h2), log10(rho+1e-3), colors='w',linestyles='dotted')
         title(r'$\Delta_{\varphi\theta}$')
         xlim(0., 20.)
@@ -749,7 +754,7 @@ def mplotter(dire,nope=False):
         ylabel(r'$z$')
         bhole(rhor)
         subplot(339)
-        contourf(r2*sin(h2), r2*cos(h2), dxy[2,2]/vtrace,levels=vlevs,norm=norm)
+        contourf(r2*sin(h2), r2*cos(h2), old_div(dxy[2,2],vtrace),levels=vlevs,norm=norm)
         contour(r2*sin(h2), r2*cos(h2), log10(rho+1e-3), colors='w',linestyles='dotted')
         title(r'$\Delta_{\varphi\varphi}$')
         xlim(0., 20.)
@@ -764,28 +769,28 @@ def mplotter(dire,nope=False):
 
     if(dmatrix&False):
         # the tetrad has reasonable physical sense only if u^h << u^r,phi
-        drrdisk=(dxy[0,0]*wdisk*rho).mean(axis=1)/(wdisk*rho).mean(axis=1)
-        dhhdisk=(dxy[1,1]*wdisk*rho).mean(axis=1)/(wdisk*rho).mean(axis=1)
-        dppdisk=(dxy[2,2]*wdisk*rho).mean(axis=1)/(wdisk*rho).mean(axis=1)
-        drpdisk=(dxy[0,2]*wdisk*rho).mean(axis=1)/(wdisk*rho).mean(axis=1)
-        drhdisk=(dxy[0,1]*wdisk*rho).mean(axis=1)/(wdisk*rho).mean(axis=1)
-        dhpdisk=(dxy[1,2]*wdisk*rho).mean(axis=1)/(wdisk*rho).mean(axis=1)
-        dhpdiskplus=(dxy[1,2]*wdisk*cos(h2)*rho).mean(axis=1)/(wdisk*rho).mean(axis=1)
+        drrdisk=old_div((dxy[0,0]*wdisk*rho).mean(axis=1),(wdisk*rho).mean(axis=1))
+        dhhdisk=old_div((dxy[1,1]*wdisk*rho).mean(axis=1),(wdisk*rho).mean(axis=1))
+        dppdisk=old_div((dxy[2,2]*wdisk*rho).mean(axis=1),(wdisk*rho).mean(axis=1))
+        drpdisk=old_div((dxy[0,2]*wdisk*rho).mean(axis=1),(wdisk*rho).mean(axis=1))
+        drhdisk=old_div((dxy[0,1]*wdisk*rho).mean(axis=1),(wdisk*rho).mean(axis=1))
+        dhpdisk=old_div((dxy[1,2]*wdisk*rho).mean(axis=1),(wdisk*rho).mean(axis=1))
+        dhpdiskplus=old_div((dxy[1,2]*wdisk*cos(h2)*rho).mean(axis=1),(wdisk*rho).mean(axis=1))
         #    dhpdiskplus=(dxy[1,2]*wdisk*cos(h2)*rho).mean(axis=1)/(wdisk*rho).mean(axis=1)
-        drhdiskplus=(dxy[1,0]*wdisk*cos(h2)*rho).mean(axis=1)/(wdisk*rho).mean(axis=1)
+        drhdiskplus=old_div((dxy[1,0]*wdisk*cos(h2)*rho).mean(axis=1),(wdisk*rho).mean(axis=1))
         #    drhdiskplus=(dxy[1,0]*wdisk*cos(h2)*rho).mean(axis=1)/(wdisk*rho).mean(axis=1)
 
         dtot=drrdisk+dhhdisk+dppdisk
 
         clf()
-        plot(r, drrdisk/dtot, color='k')
-        plot(r, dhhdisk/dtot, color='g')
-        plot(r, dppdisk/dtot, color='r')
-        plot(r, drpdisk/dtot, color='r', linestyle='dotted')
-        plot(r, drhdisk/dtot, color='g', linestyle='dotted')
-        plot(r, dhpdisk/dtot, color='orange', linestyle='dotted')
-        plot(r, dhpdiskplus/dtot, color='orange', linestyle='dashed')
-        plot(r, drhdiskplus/dtot, color='g', linestyle='dashed')
+        plot(r, old_div(drrdisk,dtot), color='k')
+        plot(r, old_div(dhhdisk,dtot), color='g')
+        plot(r, old_div(dppdisk,dtot), color='r')
+        plot(r, old_div(drpdisk,dtot), color='r', linestyle='dotted')
+        plot(r, old_div(drhdisk,dtot), color='g', linestyle='dotted')
+        plot(r, old_div(dhpdisk,dtot), color='orange', linestyle='dotted')
+        plot(r, old_div(dhpdiskplus,dtot), color='orange', linestyle='dashed')
+        plot(r, old_div(drhdiskplus,dtot), color='g', linestyle='dashed')
         plot(r*0.+h.Risco(a), arange(nr)/double(nr-1)*2.-1., color='k', linestyle='dotted')
         xlabel(r'$r$')
         ylabel(r'$\Delta_{ik} / \Delta_{\rm tot}$')
@@ -794,20 +799,20 @@ def mplotter(dire,nope=False):
         #    ylim(-1e-2,1e-2)
         savefig('/home/pasha/harm/harmpi/'+dire+'/dmatrix_rslice.eps')
 
-        drrvert=(dxy[0,0]*rrange*rho).mean(axis=0)/(rrange*rho).mean(axis=0)
-        dhhvert=(dxy[1,1]*rrange*rho).mean(axis=0)/(rrange*rho).mean(axis=0)
-        dppvert=(dxy[2,2]*rrange*rho).mean(axis=0)/(rrange*rho).mean(axis=0)
-        drpvert=(dxy[0,2]*rrange*rho).mean(axis=0)/(rrange*rho).mean(axis=0)
-        drhvert=(dxy[0,1]*rrange*rho).mean(axis=0)/(rrange*rho).mean(axis=0)
-        dhpvert=(dxy[1,2]*rrange*rho).mean(axis=0)/(rrange*rho).mean(axis=0)
+        drrvert=old_div((dxy[0,0]*rrange*rho).mean(axis=0),(rrange*rho).mean(axis=0))
+        dhhvert=old_div((dxy[1,1]*rrange*rho).mean(axis=0),(rrange*rho).mean(axis=0))
+        dppvert=old_div((dxy[2,2]*rrange*rho).mean(axis=0),(rrange*rho).mean(axis=0))
+        drpvert=old_div((dxy[0,2]*rrange*rho).mean(axis=0),(rrange*rho).mean(axis=0))
+        drhvert=old_div((dxy[0,1]*rrange*rho).mean(axis=0),(rrange*rho).mean(axis=0))
+        dhpvert=old_div((dxy[1,2]*rrange*rho).mean(axis=0),(rrange*rho).mean(axis=0))
         dvertot=drrvert+dhhvert+dppvert
         clf()
-        plot(cos(th), drrvert/dvertot, color='k')
-        plot(cos(th), dhhvert/dvertot, color='g')
-        plot(cos(th), dppvert/dvertot, color='r')
-        plot(cos(th), drpvert/dvertot, color='r', linestyle='dotted')
-        plot(cos(th), drhvert/dvertot, color='k', linestyle='dotted')
-        plot(cos(th), dhpvert/dvertot, color='orange', linestyle='dotted')
+        plot(cos(th), old_div(drrvert,dvertot), color='k')
+        plot(cos(th), old_div(dhhvert,dvertot), color='g')
+        plot(cos(th), old_div(dppvert,dvertot), color='r')
+        plot(cos(th), old_div(drpvert,dvertot), color='r', linestyle='dotted')
+        plot(cos(th), old_div(drhvert,dvertot), color='k', linestyle='dotted')
+        plot(cos(th), old_div(dhpvert,dvertot), color='orange', linestyle='dotted')
         xlabel(r'$\cos \theta$')
         ylabel(r'$\Delta_{ik} / \Delta_{\rm tot}$')
         savefig('/home/pasha/harm/harmpi/'+dire+'/dmatrix_thslice.eps')
@@ -849,8 +854,8 @@ def ascframe(prefix):
 
     # 2d-grid (order??)
     h2,r2=meshgrid(th,r)
-    print shape(r2)
-    print nr, nh
+    print(shape(r2))
+    print(nr, nh)
 
     # density:
     frho=open(rhofile, 'r')
@@ -883,7 +888,7 @@ def ascframe(prefix):
     while(s):
         ur.append(s[1])
         uh.append(s[2])
-        omega.append(double(s[3])/double(s[0]))
+        omega.append(old_div(double(s[3]),double(s[0])))
         s=str.split(str.strip(fuu.readline()))
     fuu.close()
     ur=asarray(ur, dtype=double) ;   uh=asarray(uh, dtype=double)
@@ -900,7 +905,7 @@ def ascframe(prefix):
         s=str.split(str.strip(fb.readline()))
     fb.close()
     aphi=reshape(asarray(aphi, dtype=double), [nr, nh]) 
-    print "size(aphi) = "+str(shape(aphi))
+    print("size(aphi) = "+str(shape(aphi)))
     
     rhor=1.+sqrt(1.-a**2)
 
@@ -928,7 +933,7 @@ def ascframe(prefix):
     norm = BoundaryNorm(lbetalevs, ncolors=cmap.N, clip=True)
     clf()
     fig=figure()
-    contourf(r2*sin(h2), r2*cos(h2), log10(p/pm),levels=lbetalevs,norm=norm,cmap=cmap)
+    contourf(r2*sin(h2), r2*cos(h2), log10(old_div(p,pm)),levels=lbetalevs,norm=norm,cmap=cmap)
     contour(r2*sin(h2), r2*cos(h2), aphi, colors='k')
     xlim(0.,20.)
     ylim(-10.,10.)
@@ -976,12 +981,12 @@ def ascframe(prefix):
     xgrid=(r2*sin(h2)).flatten()  ;  ygrid=(r2*cos(h2)).flatten()
     vxflow=(ur*sin(h2)+uh*cos(h2)).flatten()
     vyflow=(-uh*sin(h2)+ur*cos(h2)).flatten()
-    vx=griddata(zip(xgrid, ygrid),vxflow, (x2,y2),method='nearest')
-    vy=griddata(zip(xgrid, ygrid),vyflow, (x2,y2),method='nearest')
+    vx=griddata(list(zip(xgrid, ygrid)),vxflow, (x2,y2),method='nearest')
+    vy=griddata(list(zip(xgrid, ygrid)),vyflow, (x2,y2),method='nearest')
 
     vmin=1e-8 # sqrt((vx**2+vy**2)).min()*9.
     vmax=1.0 # sqrt((vx**2+vy**2)).max()*1.1
-    vlevs=log10((vmax/vmin)**(arange(20)/double(19))*vmin)
+    vlevs=log10((old_div(vmax,vmin))**(old_div(arange(20),double(19)))*vmin)
     vlevs[0]=-30.
     norm = BoundaryNorm(vlevs, ncolors=cmap.N, clip=True)
     clf()
@@ -1038,8 +1043,8 @@ def eqframe(prefix):
 
     # 2d-grid (order??)
     h2,r2=meshgrid(phi,r)
-    print shape(r2)
-    print nr, nphi
+    print(shape(r2))
+    print(nr, nphi)
 
     # density:
     frho=open(rhofile, 'r')
@@ -1070,7 +1075,7 @@ def eqframe(prefix):
     ur=[] ; omega=[]
     while(s):
         ur.append(s[1])
-        omega.append(double(s[3])/double(s[0]))
+        omega.append(old_div(double(s[3]),double(s[0])))
         s=str.split(str.strip(fuu.readline()))
     fuu.close()
     ur=asarray(ur, dtype=double)
@@ -1084,8 +1089,8 @@ def eqframe(prefix):
     rhomean=rho.mean(axis=1)
     drho=zeros([nr, nphi], dtype=double)
     for k in arange(nr):
-        drho[k,:]=rho[k,:]/rhomean[k]-1.
-    drholevs=levels=(arange(40)/double(20.)-0.5)*5.
+        drho[k,:]=old_div(rho[k,:],rhomean[k])-1.
+    drholevs=levels=(old_div(arange(40),double(20.))-0.5)*5.
     clf()
     fig=figure()
     contourf(r2*sin(phi), r2*cos(phi), drho,levels=drholevs)
@@ -1110,9 +1115,9 @@ def eqframe(prefix):
     close()
     # beta (magnetization) plot
     beta1=0.1 ; beta2=1000. ; nbeta=20
-    betalevs=log10((beta2/beta1)**(arange(nbeta)/double(nbeta-1))*beta1)
+    betalevs=log10((old_div(beta2,beta1))**(old_div(arange(nbeta),double(nbeta-1)))*beta1)
     clf()
-    contourf(r2*sin(phi), r2*cos(phi), log10(p/pm),levels=betalevs)
+    contourf(r2*sin(phi), r2*cos(phi), log10(old_div(p,pm)),levels=betalevs)
     colorbar()
     contour(r2*sin(phi), r2*cos(phi), drho, colors='k',levels=drholevs, lineswidth=1)
     xlim(0.,15.)
@@ -1130,7 +1135,7 @@ def dumpmovie():
     n2=340
     for k in n1+arange(n2-n1+1):
         prefix=dire+rk.dumpname(k)
-        print prefix
+        print(prefix)
 #        eqframe(prefix)
         ascframe(prefix)
         

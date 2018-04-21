@@ -1,3 +1,7 @@
+from __future__ import print_function
+from __future__ import division
+from builtins import str
+from past.utils import old_div
 from numpy import *
 import numpy as np
 import time
@@ -34,8 +38,8 @@ def faraday():
         del re.omegaf1
     if 're.omemaf2' in globals():
         del re.omegaf2
-    omegaf1=re.fFdd(0,1)/re.fFdd(1,3)
-    omegaf2=re.fFdd(0,2)/re.fFdd(2,3)
+    omegaf1=old_div(re.fFdd(0,1),re.fFdd(1,3))
+    omegaf2=old_div(re.fFdd(0,2),re.fFdd(2,3))
     return omegaf1, omegaf2
 
 def Tcalcud():
@@ -57,8 +61,8 @@ def Tcalcud():
             TudMA[kapa,nu] = w*re.uu[kapa]*re.ud[nu]+pg*delta
             #Tud[kapa,nu] = eta*uu[kapa]*ud[nu]+(pg+0.5*bsq)*delta-bu[kapa]*bd[nu]
             re.Tud[kapa,nu] = re.TudEM[kapa,nu] + re.TudMA[kapa,nu]
-    mu = -Tud[1,0]/(re.rho*re.uu[1])
-    sigma = re.TudEM[1,0]/re.TudMA[1,0]
+    mu = old_div(-Tud[1,0],(re.rho*re.uu[1]))
+    sigma = old_div(re.TudEM[1,0],re.TudMA[1,0])
     enth=1+re.ug*re.gam/re.rho
     unb=enth*re.ud[0]
     isunbound=(-unb>1.0)
@@ -67,7 +71,7 @@ def Tcalcud():
 # tetrad covariant components... and all the grid parameters should be set as well
 # on my laptop, the description is in ~/Arts/illum/frominside.tex
 def tetrad_t(uumean, udmean):
-    return -udmean[0]/drdx[0,0], -udmean[1]/drdx[1,1], 0.*udmean[0]/drdx[2,2], -udmean[3]/drdx[3,3]
+    return old_div(-udmean[0],drdx[0,0]), old_div(-udmean[1],drdx[1,1]), 0.*udmean[0]/drdx[2,2], old_div(-udmean[3],drdx[3,3])
 
 def tetrad_r(uumean, udmean):
     guu=re.guu ; drdx=re.drdx
@@ -78,7 +82,7 @@ def tetrad_r(uumean, udmean):
 
 def tetrad_h(uumean, udmean):
     gdd=re.gdd ; drdx=re.drdx
-    return 0.*uumean[0]/drdx[0,0], 0.*uumean[0]/drdx[1,1], sqrt(gdd[2,2])/drdx[2,2], 0.*uumean[0]/drdx[3,3]
+    return 0.*uumean[0]/drdx[0,0], 0.*uumean[0]/drdx[1,1], old_div(sqrt(gdd[2,2]),drdx[2,2]), 0.*uumean[0]/drdx[3,3]
 
 def tetrad_p(uumean, udmean):
     guu=re.guu ; drdx=re.drdx
@@ -93,13 +97,13 @@ def dumpinfo(prefix):
     fout=open("dumps/"+prefix+"_dinfo.dat", "w")
 
     fout.write(str(re.nx)+" "+str(re.ny)+" "+str(re.nz)+"\n")
-    print "nr x ntheta x nphi = "+str(re.nx)+" "+str(re.ny)+" "+str(re.nz)
+    print("nr x ntheta x nphi = "+str(re.nx)+" "+str(re.ny)+" "+str(re.nz))
     
     fout.write(str(re.a)+"\n")
-    print "Kerr parameter a = "+str(re.a)
+    print("Kerr parameter a = "+str(re.a))
 
     fout.write(str(re.t)+"\n")
-    print "time "+str(re.t)
+    print("time "+str(re.t))
     fout.close()
 
 # calculated and writes out evolution of some global parameters; rref is the radius at which the mass and momentum flows are calculated
@@ -117,9 +121,9 @@ def glevol(nmax, rref):
 
     for k in arange(nmax):
         fname=re.dumpname(k)
-	print "reading "+str(fname)
+	print("reading "+str(fname))
         re.rd(fname)
-	print "rho is "+str(shape(re.rho))
+	print("rho is "+str(shape(re.rho)))
         #        Tcalcud()
         # accretion rate at rref
 	rhom=(re.rho).mean(axis=2) ;  uum=(re.uu).mean(axis=3)
@@ -128,38 +132,38 @@ def glevol(nmax, rref):
         # do we need to multiply this by drdx??
         #        uum[0]=(uu[0]*drdx[0,0]).mean(axis=3) ;    uum[1]=(uu[1]*drdx[1,1]).mean(axis=3)
         #        uum[2]=(uu[2]*drdx[2,2]).mean(axis=3) ;    uum[2]=(uu[2]*drdx[2,2]).mean(axis=3)
-        gm=sqrt(gdet/gcov[1,1])[:,0,:]
+        gm=sqrt(old_div(gdet,gcov[1,1]))[:,0,:]
 	maccre=-trapz((rhom*uum[1]*(uum[1]<0.)*gm)[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
 	maccre_south=-trapz((rhom_south*uum[1]*(uum[1]<0.)*gm)[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
 	maccre_east=-trapz((rhom_east*uum[1]*(uum[1]<0.)*gm)[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
         mwind=-trapz((rhom*uum[1]*(uum[1]>0.)*gm)[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
-        laccre=-trapz((rho*fabs(ud[3]/ud[0])*uu[1]*(uu[1]<0.)*sqrt(gdet/gcov[1,1])).mean(axis=2)[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
-	lwind=-trapz((rho*fabs(ud[3]/ud[0])*uu[1]*(uu[1]>0.)*sqrt(gdet/gcov[1,1])).mean(axis=2)[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
+        laccre=-trapz((rho*fabs(old_div(ud[3],ud[0]))*uu[1]*(uu[1]<0.)*sqrt(old_div(gdet,gcov[1,1]))).mean(axis=2)[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
+	lwind=-trapz((rho*fabs(old_div(ud[3],ud[0]))*uu[1]*(uu[1]>0.)*sqrt(old_div(gdet,gcov[1,1]))).mean(axis=2)[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
         # maccre=-((rho*uu[1]*sqrt(gdet/gcov[1,1]))[nr,:,:]).sum()*_dx2*_dx3
-        fmdot.write(str(t)+" "+str(maccre)+" "+str(mwind)+" "+str(laccre/maccre)+" "+str(lwind/mwind)+" "+str(maccre_south)+" "+str(maccre_east)+"\n")
+        fmdot.write(str(t)+" "+str(maccre)+" "+str(mwind)+" "+str(old_div(laccre,maccre))+" "+str(old_div(lwind,mwind))+" "+str(maccre_south)+" "+str(maccre_east)+"\n")
     
     fmdot.close()
 
 
 def mint(rref):
-    print "mint:"
-    print "shape(rho) = "+str(shape(re.rho))
-    print "shape(uu1) = "+str(shape(re.uu[1]))
-    print "shape gdet = "+str(shape(re.gdet))
+    print("mint:")
+    print("shape(rho) = "+str(shape(re.rho)))
+    print("shape(uu1) = "+str(shape(re.uu[1])))
+    print("shape gdet = "+str(shape(re.gdet)))
     hun=unique(re.h) ;     run=unique(re.r)
     gdet=re.gdet ; gcov=re.gcov ; _dx2=re._dx2 ; _dx3=re._dx3 ; drdx=re.drdx
     uu=re.uu ; ud=re.ud ; rho=re.rho ; _dx2=re._dx2 ; _dx3=re._dx3
     nr=run[where(run<rref)].argmax()
-    indd=(rho*uu[1]*(uu[1]<0.)*sqrt(gdet/gcov[1,1]))[nr,:,:]
+    indd=(rho*uu[1]*(uu[1]<0.)*sqrt(old_div(gdet,gcov[1,1])))[nr,:,:]
     maccre=-trapz((indd).mean(axis=-1), x=hun)*_dx2*_dx3
-    indd=(rho*uu[1]*(uu[1]>0.)*sqrt(gdet/gcov[1,1]))[nr,:,:]
+    indd=(rho*uu[1]*(uu[1]>0.)*sqrt(old_div(gdet,gcov[1,1])))[nr,:,:]
     mwind=trapz((indd).mean(axis=-1), x=hun)*_dx2*_dx3
-    indd=(rho*uu[1]*(uu[1]<0.)*fabs(ud[3]/drdx[3,3])*sqrt(gdet/gcov[1,1]))[nr,:,:]
+    indd=(rho*uu[1]*(uu[1]<0.)*fabs(old_div(ud[3],drdx[3,3]))*sqrt(old_div(gdet,gcov[1,1])))[nr,:,:]
     laccre=-trapz((indd).mean(axis=-1), x=hun)*_dx2*_dx3
-    indd=(rho*uu[1]*(uu[1]>0.)*fabs(ud[3]/drdx[3,3])*sqrt(gdet/gcov[1,1]))[nr,:,:]
+    indd=(rho*uu[1]*(uu[1]>0.)*fabs(old_div(ud[3],drdx[3,3]))*sqrt(old_div(gdet,gcov[1,1])))[nr,:,:]
     lwind=-trapz((indd).mean(axis=-1), x=hun)*_dx2*_dx3
 
-    return maccre, mwind, laccre/maccre, lwind/mwind
+    return maccre, mwind, old_div(laccre,maccre), old_div(lwind,mwind)
 
 def readndump(n1, n2, rref=5.0):
 
@@ -184,7 +188,7 @@ def readndump(n1, n2, rref=5.0):
         re.rd(fname)
         Tcalcud()
 	p=(re.gam-1.)*re.ug
-	magp=re.bsq/2.
+	magp=old_div(re.bsq,2.)
         rho=re.rho ; uu=re.uu ; ud=re.ud 
         if(k==n1):
             rhomean=rho
@@ -231,23 +235,23 @@ def readndump(n1, n2, rref=5.0):
 #	    unorm+=uaver
 	    tudem+=re.TudEM ; tudma+=re.TudMA
 	maccre, mwind, laccre, lwind = mint(rref)
-        fmdot.write(str(re.t)+" "+str(maccre)+" "+str(mwind)+" "+str(laccre/maccre)+" "+str(lwind/mwind)+"\n")
+        fmdot.write(str(re.t)+" "+str(maccre)+" "+str(mwind)+" "+str(old_div(laccre,maccre))+" "+str(old_div(lwind,mwind))+"\n")
     fmdot.close()
     # velocity normalization:
-    uu0*=drdx[0,0]/rhomean ; uur*=drdx[1,1]/rhomean ; uuh*=drdx[2,2]/rhomean ; uup*=drdx[3,3]/rhomean
+    uu0*=old_div(drdx[0,0],rhomean) ; uur*=old_div(drdx[1,1],rhomean) ; uuh*=old_div(drdx[2,2],rhomean) ; uup*=old_div(drdx[3,3],rhomean)
     ud0/=drdx[0,0]*rhomean ; udr/=drdx[1,1]*rhomean ; udh/=drdx[2,2]*rhomean ; udp/=drdx[3,3]*rhomean
-    puu0*=drdx[0,0]/pmean ; puur*=drdx[1,1]/pmean ; puuh*=drdx[2,2]/pmean ; puup*=drdx[3,3]/pmean
+    puu0*=old_div(drdx[0,0],pmean) ; puur*=old_div(drdx[1,1],pmean) ; puuh*=old_div(drdx[2,2],pmean) ; puup*=old_div(drdx[3,3],pmean)
     pud0/=drdx[0,0]*pmean ; pudr/=drdx[1,1]*pmean ; pudh/=drdx[2,2]*pmean ; pudp/=drdx[3,3]*pmean
-    mpuu0*=drdx[0,0]/magp_mean ; mpuur*=drdx[1,1]/magp_mean ; mpuuh*=drdx[2,2]/magp_mean ; mpuup*=drdx[3,3]/magp_mean
+    mpuu0*=old_div(drdx[0,0],magp_mean) ; mpuur*=old_div(drdx[1,1],magp_mean) ; mpuuh*=old_div(drdx[2,2],magp_mean) ; mpuup*=old_div(drdx[3,3],magp_mean)
     mpud0/=drdx[0,0]*magp_mean ; mpudr/=drdx[1,1]*magp_mean ; mpudh/=drdx[2,2]*magp_mean ; mpudp/=drdx[3,3]*magp_mean
 
 #    uu0/=unorm ; uur/=unorm ; uuh/=unorm ; uup/=unorm
 #    ud0/=unorm ; udr/=unorm ; udh/=unorm ; udp/=unorm
     # averaging the density:
-    rhomean=rhomean/double(nframes)
-    rhodisp=rhosqmean/double(nframes)-rhomean**2
-    pmean=pmean/double(nframes)
-    magp_mean=magp_mean/double(nframes)
+    rhomean=old_div(rhomean,double(nframes))
+    rhodisp=old_div(rhosqmean,double(nframes))-rhomean**2
+    pmean=old_div(pmean,double(nframes))
+    magp_mean=old_div(magp_mean,double(nframes))
     tudem/=double(nframes) ; tudma/=double(nframes)
     aphi/=double(nframes)
     # physical stress-energy tensor components:
@@ -454,10 +458,10 @@ def corvee(n1,n2):
         if(k==n1):
             rhomean=rho
             # velocity components:
-            uu0=uu[0]*drdx[0,0]-uumean[0] ; ud0=ud[0]/drdx[0,0]-udmean[0]
-            uur=uu[1]*drdx[1,1]-uumean[1] ; udr=ud[1]/drdx[1,1]-udmean[1]
-            uuh=uu[2]*drdx[2,2]-uumean[2] ; udh=ud[2]/drdx[2,2]-udmean[2]
-            uup=uu[3]*drdx[3,3]-uumean[3] ; udp=ud[3]/drdx[3,3]-udmean[3]
+            uu0=uu[0]*drdx[0,0]-uumean[0] ; ud0=old_div(ud[0],drdx[0,0])-udmean[0]
+            uur=uu[1]*drdx[1,1]-uumean[1] ; udr=old_div(ud[1],drdx[1,1])-udmean[1]
+            uuh=uu[2]*drdx[2,2]-uumean[2] ; udh=old_div(ud[2],drdx[2,2])-udmean[2]
+            uup=uu[3]*drdx[3,3]-uumean[3] ; udp=old_div(ud[3],drdx[3,3])-udmean[3]
             tuur=(uu0*tr[0]+uur*tr[1]+uuh*tr[2]+uup*tr[3])  # co-moving velocity components
             tuuh=(uu0*th[0]+uur*th[1]+uuh*th[2]+uup*th[3])
             tuup=(uu0*tp[0]+uur*tp[1]+uuh*tp[2]+uup*tp[3])
@@ -506,29 +510,29 @@ def fromabove(fname, htor=0.1, alifactor=1):
     indisk=double(abs(cos(re.h))<htor)
     innorm=indisk.mean(axis=1)
 
-    ugmean=(re.ug*indisk).mean(axis=1)/innorm
+    ugmean=old_div((re.ug*indisk).mean(axis=1),innorm)
     drdx=re.drdx ; uu=re.uu ; ud=re.ud ; rho=re.rho ; ug=re.ug # can we just import all the data?
     uu[0]*=drdx[0,0]  ; uu[1]*=drdx[1,1]  ; uu[2]*=drdx[2,2]  ; uu[3]*=drdx[3,3]  # to physical
     ud[0]/=drdx[0,0]  ; ud[1]/=drdx[1,1]  ; ud[2]/=drdx[2,2]  ; ud[3]/=drdx[3,3]  # to physical
 
-    uumean0=(uu[0]*indisk*rho).mean(axis=1)/(rho*indisk).mean(axis=1)
-    uumeanr=(uu[1]*indisk*rho).mean(axis=1)/(rho*indisk).mean(axis=1)
-    uumeanh=(uu[2]*indisk*rho).mean(axis=1)/(rho*indisk).mean(axis=1)
-    uumeanp=(uu[3]*indisk*rho).mean(axis=1)/(rho*indisk).mean(axis=1)
-    uumean0_p=(uu[0]*indisk*ug).mean(axis=1)/(ug*indisk).mean(axis=1)
-    uumeanr_p=(uu[1]*indisk*ug).mean(axis=1)/(ug*indisk).mean(axis=1)
-    uumeanh_p=(uu[2]*indisk*ug).mean(axis=1)/(ug*indisk).mean(axis=1)
-    uumeanp_p=(uu[3]*indisk*ug).mean(axis=1)/(ug*indisk).mean(axis=1)
-    udmean0=(ud[0]*indisk*rho).mean(axis=1)/(rho*indisk).mean(axis=1)
-    udmeanr=(ud[1]*indisk*rho).mean(axis=1)/(rho*indisk).mean(axis=1)
-    udmeanh=(ud[2]*indisk*rho).mean(axis=1)/(rho*indisk).mean(axis=1)
-    udmeanp=(ud[3]*indisk*rho).mean(axis=1)/(rho*indisk).mean(axis=1)
-    udmean0_p=(ud[0]*indisk*ug).mean(axis=1)/(ug*indisk).mean(axis=1)
-    udmeanr_p=(ud[1]*indisk*ug).mean(axis=1)/(ug*indisk).mean(axis=1)
-    udmeanh_p=(ud[2]*indisk*ug).mean(axis=1)/(ug*indisk).mean(axis=1)
-    udmeanp_p=(ud[3]*indisk*ug).mean(axis=1)/(ug*indisk).mean(axis=1)
+    uumean0=old_div((uu[0]*indisk*rho).mean(axis=1),(rho*indisk).mean(axis=1))
+    uumeanr=old_div((uu[1]*indisk*rho).mean(axis=1),(rho*indisk).mean(axis=1))
+    uumeanh=old_div((uu[2]*indisk*rho).mean(axis=1),(rho*indisk).mean(axis=1))
+    uumeanp=old_div((uu[3]*indisk*rho).mean(axis=1),(rho*indisk).mean(axis=1))
+    uumean0_p=old_div((uu[0]*indisk*ug).mean(axis=1),(ug*indisk).mean(axis=1))
+    uumeanr_p=old_div((uu[1]*indisk*ug).mean(axis=1),(ug*indisk).mean(axis=1))
+    uumeanh_p=old_div((uu[2]*indisk*ug).mean(axis=1),(ug*indisk).mean(axis=1))
+    uumeanp_p=old_div((uu[3]*indisk*ug).mean(axis=1),(ug*indisk).mean(axis=1))
+    udmean0=old_div((ud[0]*indisk*rho).mean(axis=1),(rho*indisk).mean(axis=1))
+    udmeanr=old_div((ud[1]*indisk*rho).mean(axis=1),(rho*indisk).mean(axis=1))
+    udmeanh=old_div((ud[2]*indisk*rho).mean(axis=1),(rho*indisk).mean(axis=1))
+    udmeanp=old_div((ud[3]*indisk*rho).mean(axis=1),(rho*indisk).mean(axis=1))
+    udmean0_p=old_div((ud[0]*indisk*ug).mean(axis=1),(ug*indisk).mean(axis=1))
+    udmeanr_p=old_div((ud[1]*indisk*ug).mean(axis=1),(ug*indisk).mean(axis=1))
+    udmeanh_p=old_div((ud[2]*indisk*ug).mean(axis=1),(ug*indisk).mean(axis=1))
+    udmeanp_p=old_div((ud[3]*indisk*ug).mean(axis=1),(ug*indisk).mean(axis=1))
 
-    rhomean=(rho*indisk).mean(axis=1)/innorm
+    rhomean=old_div((rho*indisk).mean(axis=1),innorm)
     pmag=(re.bsq*indisk).mean(axis=1)/innorm/2.
 
     # r mesh:
@@ -585,23 +589,23 @@ def framerip(fname, alifactor=1):
 
     ug=ug.mean(axis=2)
 #    uu[0]*=drdx[0,0]  ; uu[1]*=drdx[1,1]  ; uu[2]*=drdx[2,2]  ; uu[3]*=drdx[3,3]  # to physical
-    uu0=(uu[0]*rho*drdx[0,0]).mean(axis=2)/rho.mean(axis=2)
-    uur=(uu[1]*rho*drdx[1,1]).mean(axis=2)/rho.mean(axis=2)
-    uuh=(uu[2]*rho*drdx[2,2]).mean(axis=2)/rho.mean(axis=2)
-    uup=(uu[3]*rho*drdx[3,3]).mean(axis=2)/rho.mean(axis=2)
+    uu0=old_div((uu[0]*rho*drdx[0,0]).mean(axis=2),rho.mean(axis=2))
+    uur=old_div((uu[1]*rho*drdx[1,1]).mean(axis=2),rho.mean(axis=2))
+    uuh=old_div((uu[2]*rho*drdx[2,2]).mean(axis=2),rho.mean(axis=2))
+    uup=old_div((uu[3]*rho*drdx[3,3]).mean(axis=2),rho.mean(axis=2))
 
 #   uu[0]*=drdx[0,0]  ; uu[1]*=drdx[1,1]  ; uu[2]*=drdx[2,2]  ; uu[3]*=drdx[3,3]  # to physical
 #    ud[0]/=drdx[0,0]  ; ud[1]/=drdx[1,1]  ; ud[2]/=drdx[2,2]  ; ud[3]/=drdx[3,3]  # to physical
 
 #    ud=(ud*rho).mean(axis=3)/rho.mean(axis=2)
 #    ud[0]/=drdx[0,0]  ; ud[1]/=drdx[1,1]  ; ud[2]/=drdx[2,2]  ; ud[3]/=drdx[3,3]  # to physical
-    ud0=(ud[0]*rho/drdx[0,0]).mean(axis=2)/rho.mean(axis=2)
-    udr=(ud[1]*rho/drdx[1,1]).mean(axis=2)/rho.mean(axis=2)
-    udh=(ud[2]*rho/drdx[2,2]).mean(axis=2)/rho.mean(axis=2)
-    udp=(ud[3]*rho/drdx[3,3]).mean(axis=2)/rho.mean(axis=2)
+    ud0=old_div((ud[0]*rho/drdx[0,0]).mean(axis=2),rho.mean(axis=2))
+    udr=old_div((ud[1]*rho/drdx[1,1]).mean(axis=2),rho.mean(axis=2))
+    udh=old_div((ud[2]*rho/drdx[2,2]).mean(axis=2),rho.mean(axis=2))
+    udp=old_div((ud[3]*rho/drdx[3,3]).mean(axis=2),rho.mean(axis=2))
 
     rhom=rho.mean(axis=2)
-    pmag=(bsq).mean(axis=2)/2.
+    pmag=old_div((bsq).mean(axis=2),2.)
     aphi=re.psicalc()
     B[1]=B[1]*drdx[1,1] ; B[2]=B[2]*drdx[2,2] ; B[3]=B[3]*drdx[3,3]
     B=B.mean(axis=3)
@@ -633,7 +637,7 @@ def framerip(fname, alifactor=1):
                 if(ky%alifactor==0):
                     foutrho.write(str(rhom[kx,ky])+'\n')
                     foutp.write(str(ug[kx,ky]*(re.gam-1.))+'\n')
-                    foutpm.write(str(pmag[kx,ky]/2.)+'\n')
+                    foutpm.write(str(old_div(pmag[kx,ky],2.))+'\n')
                     foutu.write(str(uu0[kx,ky])+' '+str(uur[kx,ky])+' '+str(uuh[kx,ky])+' '+str(uup[kx,ky])+'\n')
                     foutd.write(str(ud0[kx,ky])+' '+str(udr[kx,ky])+' '+str(udh[kx,ky])+' '+str(udp[kx,ky])+'\n')
 		    foutb.write(str(B[1, kx,ky])+' '+str(B[2, kx,ky])+' '+str(B[3, kx,ky])+' '+str(aphi[kx,ky])+'\n')
@@ -660,14 +664,14 @@ def defaultrun():
 
     flist=get_sorted_file_list()
     nlist=size(flist)
-    print str(nlist)+" files"
-    print flist
+    print(str(nlist)+" files")
+    print(flist)
     for k in arange(nlist):
 	dumpinfo("../"+flist[k])
 	framerip("../"+flist[k], alifactor=3)
 	maccre, mwind, laccre, lwind = mint(rref)
 	fromabove("../"+flist[k], alifactor=3)
-        print "merger_remote defaultrun: reducing "+str(flist[k])
+        print("merger_remote defaultrun: reducing "+str(flist[k]))
 	fout.write(str(re.t)+" "+str(maccre)+" "+str(mwind)+" "+str(laccre)+" "+str(lwind)+"\n")
     fout.close()
 

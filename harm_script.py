@@ -1,3 +1,7 @@
+from __future__ import print_function
+from __future__ import division
+from builtins import range
+from past.utils import old_div
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -96,11 +100,11 @@ def convert_to_single_file(startn=0,endn=-1,ln=10,whichi=0,whichn=1,**kwargs):
 def ellk(a,r):
     ekval = ek(a,r)
     lkval = lk(a,r)
-    return(lkval/ekval)
+    return(old_div(lkval,ekval))
 
 def ek(a,r):
     #-u_t, I suspect
-    ek = (r**2-2*r+a*r**0.5)/(r*(r**2-3*r+2*a*r**0.5)**0.5)
+    ek = old_div((r**2-2*r+a*r**0.5),(r*(r**2-3*r+2*a*r**0.5)**0.5))
     return(ek)
 
 def lk(a,r):
@@ -110,14 +114,14 @@ def lk(a,r):
 def Risco(ain):
     eps = np.finfo(np.float64).eps
     a = np.minimum(ain,1.)
-    Z1 = 1 + (1. - a**2)**(1./3.) * ((1. + a)**(1./3.) + (1. - a)**(1./3.))
-    Z2 = (3*a**2 + Z1**2)**(1./2.)
-    risco = 3 + Z2 - np.sign(a)* ( (3 - Z1)*(3 + Z1 + 2*Z2) )**(1./2.)
+    Z1 = 1 + (1. - a**2)**(old_div(1.,3.)) * ((1. + a)**(old_div(1.,3.)) + (1. - a)**(old_div(1.,3.)))
+    Z2 = (3*a**2 + Z1**2)**(old_div(1.,2.))
+    risco = 3 + Z2 - np.sign(a)* ( (3 - Z1)*(3 + Z1 + 2*Z2) )**(old_div(1.,2.))
     return(risco)
 
 def Ebind(r,a):
     #1+u_t, I suspect
-    Eb = 1 - (r**2-2*r+a*r**0.5)/(r*(r**2-3*r+2*a*r**0.5)**0.5)
+    Eb = 1 - old_div((r**2-2*r+a*r**0.5),(r*(r**2-3*r+2*a*r**0.5)**0.5))
     return( Eb )
 
 def etaNT(a):
@@ -135,7 +139,7 @@ def Ebindisco(a):
     return( Eb )
 
 def mkmov_simple(starti=0,endi=400):
-    for i in xrange(starti,endi+1):
+    for i in range(starti,endi+1):
         rd("dump%03d" % i);
         aphi=psicalc()
         if i == starti: amax = aphi.max()
@@ -145,7 +149,7 @@ def mkmov_simple(starti=0,endi=400):
         ax.set_ylabel(r"$z\ [r_g]$",fontsize=20,labelpad=-5)
         cb.ax.set_xlabel(r"$\log\rho$",fontsize=20,ha="left")
         plc(aphi,levels=np.linspace(-amax,amax,10)[1:-1],colors="white",linewidths=2,xy=-1)
-        print i;
+        print(i);
         plt.title("t=%.4g"%np.round(t)); 
         plt.draw();
         plt.savefig("frame%03d.png"%i)
@@ -217,7 +221,7 @@ def mkmov(startn=0,endn=-1,ln=10,whichi=0,whichn=1,**kwargs):
         else:
             print("Unknown movie type: %s" % which)
             return
-        print fldindex
+        print(fldindex)
         plt.draw()
         if dosavefig:
             plt.savefig(fname,dpi = dpi)
@@ -240,7 +244,7 @@ def mkfrmsimple(fig=None,aphimax=None,lnx=100,lny=100,vmin=-10,vmax=1,fntsize=20
     #label = r"$\log_{10}\rho$"
     #cx1,cb1 = mkvertcolorbar(ax,fig,gap=0.02,width=0.05,vmin=vmin,vmax=vmax,loc="right",
     #            label=label,ticks=tcks,fntsize=fntsize,cmap=cmap,extend="both")
-    plc(aphi/aphimax,symmx=1,xy=-1,levels=np.linspace(0.,1.,20)[1:],colors="black",linewidths=1.)
+    plc(old_div(aphi,aphimax),symmx=1,xy=-1,levels=np.linspace(0.,1.,20)[1:],colors="black",linewidths=1.)
     plt.title(r"$t=%g$" % int(t+0.5), fontsize=fntsize)
     plt.xlim(-lnx,lnx)
     plt.ylim(-lny,lny)
@@ -308,13 +312,13 @@ def Qmri(dir=2):
     #corrected this expression to include both 2pi and dxdxp[3][3]
     #also corrected defition of va^2 to contain bsq+gam*ug term
     #need to figure out how to properly measure this in fluid frame
-    vaudir = np.abs(bu[dir])/np.sqrt(rho+bsq+gam*ug)
+    vaudir = old_div(np.abs(bu[dir]),np.sqrt(rho+bsq+gam*ug))
     omega = dxdxp[3][3]*uu[3]/uu[0]+1e-15
     lambdamriudir = 2*np.pi * vaudir / omega
     if dir == 2:
-        res=lambdamriudir/_dx2
+        res=old_div(lambdamriudir,_dx2)
     elif dir == 3:
-        res=lambdamriudir/_dx3
+        res=old_div(lambdamriudir,_dx3)
     return(res)
 
 def goodlabs(fntsize=20):
@@ -390,7 +394,7 @@ def plc(myvar,**kwargs): #plc
             ycoord=np.concatenate((ycoord[:,::-1],ycoord),axis=1)
         else:
             if myvar.shape[-1] > 1: 
-                symmk = (k+nz/2)%nz 
+                symmk = (k+old_div(nz,2))%nz 
             else: 
                 symmk = k
             myvar=np.concatenate((myvar[:,ny-1:ny,k:k+1],myvar[:,::-1,symmk:symmk+1],myvar[:,:,k:k+1]),axis=1)
@@ -406,9 +410,9 @@ def plc(myvar,**kwargs): #plc
             r1 = np.concatenate((r,r[...,0:1]),axis=2)
             ph1 = np.concatenate((ph,ph[...,0:1]+2*np.pi),axis=2)
             myvar = np.concatenate((myvar,myvar[...,0:1]),axis=2)
-        xcoord=(r1*cos(ph1))[:,ny/2,:,None]
-        ycoord=(r1*sin(ph1))[:,ny/2,:,None]
-        myvar = myvar[:,ny/2,:,None]
+        xcoord=(r1*cos(ph1))[:,old_div(ny,2),:,None]
+        ycoord=(r1*sin(ph1))[:,old_div(ny,2),:,None]
+        myvar = myvar[:,old_div(ny,2),:,None]
     else:
         myvar = myvar[:,:,None] if myvar.ndim == 2 else myvar[:,:,k:k+1]
     if lin:
@@ -486,8 +490,8 @@ def faraday():
         del omegaf1
     if 'omemaf2' in globals():
         del omegaf2
-    omegaf1=fFdd(0,1)/fFdd(1,3)
-    omegaf2=fFdd(0,2)/fFdd(2,3)
+    omegaf1=old_div(fFdd(0,1),fFdd(1,3))
+    omegaf2=old_div(fFdd(0,2),fFdd(2,3))
 
 def Tcalcud():
     global Tud, TudEM, TudMA
@@ -522,8 +526,8 @@ def Tcalcud():
             TudMA[kapa,nu] = w*uu[kapa]*ud[nu]+pg*delta
             #Tud[kapa,nu] = eta*uu[kapa]*ud[nu]+(pg+0.5*bsq)*delta-bu[kapa]*bd[nu]
             Tud[kapa,nu] = TudEM[kapa,nu] + TudMA[kapa,nu]
-    mu = -Tud[1,0]/(rho*uu[1])
-    sigma = TudEM[1,0]/TudMA[1,0]
+    mu = old_div(-Tud[1,0],(rho*uu[1]))
+    sigma = old_div(TudEM[1,0],TudMA[1,0])
     enth=1+ug*gam/rho
     unb=enth*ud[0]
     isunbound=(-unb>1.0)
@@ -539,7 +543,7 @@ if __name__ == "__main__":
         plt.clf()
         rg("gdump")
         rd("dump000")
-        plt.plot(r[:,ny/2,0],rho[:,ny/2,0])
+        plt.plot(r[:,old_div(ny,2),0],rho[:,old_div(ny,2),0])
         plt.xscale("log")
         plt.yscale("log")
         plt.xlabel("r")
@@ -561,13 +565,11 @@ def bhole():
     art.set_zorder(20)
     plt.draw()
 
-
-
 def testfail(fldname = "dump000"):
     try: 
         rd(fldname)
     except IOError as e:
-        print "I/O error({0}): {1}".format(e.errno, e.strerror)
+        print("I/O error({0}): {1}".format(e.errno, e.strerror))
 
 
 def get_sorted_file_list(prefix="dump"):
@@ -633,7 +635,26 @@ def amax(arg1,arg2):
 def amin(arg1,arg2):
     return(np.minimum(arg1,arg2))
 
+# origin plots:
+def origin_plot(dumpn, xmax=30.):
+    filename=dumpname(dumpn)
+    plt.clf()
+    rg("gdump")
+    rd(filename)
+    nxx=10
+    rlevs=xmax*np.arange(nxx)/np.double(nxx) ; thlevs=np.pi*np.arange(nxx)/np.double(nxx)
+    plt.contourf((r*sin(h))[:,:,0], (r*cos(h))[:,:,0], np.log10(rho[:,:,0]))
+    plt.contour((r*sin(h))[:,:,0], (r*cos(h))[:,:,0], r[:,:,0], levels=rlevs, colors='w')
+    plt.contour((r*sin(h))[:,:,0], (r*cos(h))[:,:,0], origin_r[:,:,0], levels=rlevs, colors='k')
+    plt.contour((r*sin(h))[:,:,0], (r*cos(h))[:,:,0], h[:,:,0], levels=thlevs, colors='w')
+    plt.contour((r*sin(h))[:,:,0], (r*cos(h))[:,:,0], origin_th[:,:,0], levels=thlevs, colors='k')
+    plt.xlim(0., xmax) ; plt.ylim(-xmax/2., xmax/2.)
+    plt.savefig("dumps/"+filename+"_ori.png")
 
+def origins(n1, n2):   
+    for k in arange(n2-n1)+n1:
+        origin_plot(k, xmax=30.)
+    
 #############################
 #
 # End of movie making
@@ -655,19 +676,9 @@ if __name__ == "__main__":
             plt.clf()
             rg("gdump")
             rd("dump000")
-            plt.loglog(r[:,ny/2,0],rho[:,ny/2,0])
+            plt.loglog(r[:,old_div(ny,2),0],rho[:,old_div(ny,2),0])
             plt.xlabel("r")
             plt.ylabel("rho")
             plt.savefig("dumptest.eps")
-        if True:
-            #2D plot example
-            plt.clf()
-            rg("gdump")
-            rd("dump000")
-            #R-z plot of the logarithm of density distribution
-            plc(np.log10(rho[:,:,0]),cb=True,xy=1,xmax=50,ymax=30, isfilled=True)
-            #            aphi=psicalc()
-            plc(r[:,:,0], xy=1,xmax=50,ymax=30, colors='w')
-            plc(origin_r[:,:,0], xy=1,xmax=50,ymax=30, colors='k')
-            plt.savefig("inittest.eps")
 
+# ffmpeg -f image2 -r 15 -pattern_type glob -i 'dumps/dump*.png' -pix_fmt yuv420p -b 4096k orimovie.mp4
