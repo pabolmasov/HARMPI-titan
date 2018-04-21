@@ -46,12 +46,12 @@
 USEICC = 1
 USEOMP = 0  #please do not use this option (yet), as this has not been recently tested
 USEMPI = 1
-MACHINE =titan
+MACHINE =suselaptop
 
 # Add your other choices here:
 ifeq ($(MACHINE),suselaptop)
 MPICC =/usr/lib64/mpi/gcc/openmpi/bin/mpicc
-GSLLIB=/usr/lib64 
+GSLLIB=/usr/lib64:/usr/lib64/mpi/gcc/openmpi/lib64
 GSLINC=/usr/include
 # ADDCCFLAGS= -fPIC -shared
 else
@@ -90,7 +90,7 @@ endif
 endif
 
 ifeq ($(USEMPI),1)
-EXTRALIBS= -L$(GSLLIB) -lgsl -lgslcblas -lm #-lm #-lmpi
+EXTRALIBS= -L$(GSLLIB) -lgsl -lgslcblas -lm -lmpi
 EXTRACCFLAGS=-DMPI
 CC=$(MPICC) #/usr/local/bin/mpicc
 else

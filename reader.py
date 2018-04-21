@@ -345,7 +345,7 @@ def gdump2_assign(gd,**kwargs):
 
 #read in a dump file
 def dump_assign(gd,**kwargs):
-    global t,nx,ny,nz,_dx1,_dx2,_dx3,gam,hslope,a,R0,Rin,Rout,ti,tj,tk,x1,x2,x3,r,h,ph,rho,ug,vu,B,pg,cs2,Sden,U,gdetB,divb,uu,ud,bu,bd,v1m,v1p,v2m,v2p,gdet,bsq,gdet,alpha,rhor, ktot, pg
+    global t,nx,ny,nz,_dx1,_dx2,_dx3,gam,hslope,a,R0,Rin,Rout,ti,tj,tk,x1,x2,x3,r,h,ph,rho,ug,vu,B,pg,cs2,Sden,U,gdetB,divb,uu,ud,bu,bd,v1m,v1p,v2m,v2p,gdet,bsq,gdet,alpha,rhor, ktot, pg, origin_r, origin_th, origin_phi
     nx = kwargs.pop("nx",nx)
     ny = kwargs.pop("ny",ny)
     nz = kwargs.pop("nz",nz)
@@ -356,6 +356,9 @@ def dump_assign(gd,**kwargs):
     B=np.zeros_like(gd[0:4])
     vu[1:4] = gd[n:n+3]; n+=3
     B[1:4] = gd[n:n+3]; n+=3
+    origin_r = gd[n] ; n+=1
+    origin_th = gd[n] ; n+=1
+    origin_phi = gd[n] ; n+=1
     #if total entropy equation is evolved (on by default)
     if DOKTOT == 1:
       ktot = gd[n]; n+=1

@@ -107,7 +107,6 @@
 #define BCON2	6
 #define BCON3	7
 
-
 /* for conserved variables */
 #define QCOV0	1
 #define QCOV1	2

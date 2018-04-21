@@ -114,7 +114,10 @@ void primtoU_g(
 
   // Now set the conserved variables themselves, using HARM's definition:
   U[RHO] = ucon[0]*rho0 ;
-
+  U[OR] = ucon[0]*prim[OR] ;
+  U[OH] = ucon[0]*prim[OH] ;
+  U[OP] = ucon[0]*prim[OP] ;
+  
   for( i = 0; i < 4; i++) {
     U[QCOV0+i] = gamma*(w + bsq)*ucov[i] 
       - (p + bsq/2.)*ncov[i] 

@@ -330,7 +330,6 @@ void init_torus()
           if(u > umax && r > rin) umax = u ;
           p[i][j][k][U1] = ur ;
           p[i][j][k][U2] = uh ;
-
           p[i][j][k][U3] = up ;
 
           /* convert from 4-vel in BL coords to relative 4-vel in code coords */
@@ -340,6 +339,9 @@ void init_torus()
         p[i][j][k][B1] = 0. ;
         p[i][j][k][B2] = 0. ;
         p[i][j][k][B3] = 0. ;
+	p[i][j][k][OR] = rho * r ; 
+	p[i][j][k][OH] = rho * th ; 
+	p[i][j][k][OP] = rho * phi; 
       }
     }
   }
@@ -355,6 +357,9 @@ void init_torus()
   ZSLOOP(0,N1-1,0,N2-1,0,N3-1) {
           p[i][j][k][RHO] /= rhomax ;
           p[i][j][k][UU]  /= rhomax ;
+	  p[i][j][k][OR] /= rhomax ;
+	  p[i][j][k][OH] /= rhomax ;
+	  p[i][j][k][OP] /= rhomax ;
   }
   umax /= rhomax ;
   kappa *= pow(rhomax,gam-1);
@@ -753,6 +758,9 @@ void init_bondi()
 		p[i][j][k][B1] = 0. ;
 		p[i][j][k][B2] = 0. ;
 		p[i][j][k][B3] = 0. ;
+		p[i][j][k][OR] = rho * r ; 
+		p[i][j][k][OH] = rho * th ; 
+		p[i][j][k][OP] = rho * phi; 
 
 	}
 

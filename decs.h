@@ -112,9 +112,9 @@
 #define PERIODIC (0)          /* whether or not to use periodic boundary conditions */
 #define OUTFLOW  (0)          /* whether or not to use outflow boundary conditions in all directions */
 #elif WHICHPROBLEM == TORUS_PROBLEM
-#define N1       (8)         /* number of physical zones in X1-direction */  //change back to 256x256
+#define N1       (64)         /* number of physical zones in X1-direction */  //change back to 256x256
 #define N2       (64)         /* number of physical zones in X2-direction */
-#define N3       (64)          /* number of physical zones in X3-direction */
+#define N3       (1)          /* number of physical zones in X3-direction */
 #define GR       (1)          /* whether or not to use GR */
 #define BL       (1)          /* whether or not to use BL coords */
 #define INFLOW   (0)          /* whether or not to allow inflow at boundaries */
@@ -173,20 +173,17 @@
 #define D3 (N3>1)
 
 #if(DOKTOT)
-#  define NPR        (9)
+#  define NPR        (12)
 #else
-#  define NPR        (8)
+#  define NPR        (11)
 #endif
 
 #define NDIM       (4)        /* number of total dimensions.  Never changes */
 #define NPG        (5)        /* number of positions on grid for grid functions */
-#define COMPDIM    (2)        /* number of non-trivial spatial dimensions used in computation */
-
+/* #define COMPDIM    (2) */       /* number of non-trivial spatial dimensions used in computation */ 
+/* probably we don't need COMPDIM */
+  
 #define NIMG       (5)        /* Number of types of diagnostics to save into fdump */
-
-
-
-
 
 
 /* whether or not to use Font's  adiabatic/isothermal prim. var. inversion method: */
@@ -252,8 +249,12 @@
 #define B1	(5)
 #define B2	(6)
 #define B3	(7)
-#define KTOT    (8)
-
+/* three passive scalar quantities, presumably initial coordinates */
+#define OR      (8)
+#define OH      (9)
+#define OP      (10)
+/* the enigmatic Ktoto */
+#define KTOT    (11)
 
 /* mnemonics for dimensional indices */
 #define TT	(0)     

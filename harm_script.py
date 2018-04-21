@@ -665,8 +665,9 @@ if __name__ == "__main__":
             rg("gdump")
             rd("dump000")
             #R-z plot of the logarithm of density distribution
-            plc(np.log10(rho),cb=True,xy=1,xmax=50,ymax=30, isfilled=True)
-            aphi=psicalc()
-            plc(aphi, xy=1,xmax=50,ymax=30, colors='k')
+            plc(np.log10(rho[:,:,0]),cb=True,xy=1,xmax=50,ymax=30, isfilled=True)
+            #            aphi=psicalc()
+            plc(r[:,:,0], xy=1,xmax=50,ymax=30, colors='w')
+            plc(origin_r[:,:,0], xy=1,xmax=50,ymax=30, colors='k')
             plt.savefig("inittest.eps")
 

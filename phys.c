@@ -61,6 +61,10 @@ void primtoflux(double *pr, struct of_state *q, int dir,
 
 	/* particle number flux */
 	flux[RHO] = pr[RHO]*q->ucon[dir] ;
+	/* densities of the passive scalars we track in the simulation */
+	flux[OR] = pr[OR]*q->ucon[dir] ;
+	flux[OH] = pr[OH]*q->ucon[dir] ;
+	flux[OP] = pr[OP]*q->ucon[dir] ;
 
 	mhd_calc(pr, dir, q, mhd) ;
 
@@ -139,9 +143,6 @@ void source(double *ph, struct of_geom *geom, int ii, int jj, int kk, double *dU
   mhd_calc(ph, 1, &q, mhd[1]) ;
   mhd_calc(ph, 2, &q, mhd[2]) ;
   mhd_calc(ph, 3, &q, mhd[3]) ;
-  
-  
-  
   
   /* contract mhd stress tensor with connection */
   PLOOP dU[m] = 0. ;
