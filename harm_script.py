@@ -51,7 +51,8 @@ from numpy import ma
 import matplotlib.colors as colors
 #use_math_text = True
 
-from reader import *
+import reader as re
+# from reader import *
 
 def mathify_axes_ticks(ax,fontsize=20,xticks=None,yticks=None):
     if xticks is None:
@@ -94,9 +95,8 @@ def convert_to_single_file(startn=0,endn=-1,ln=10,whichi=0,whichn=1,**kwargs):
             print("File %s exists, skipping..." % fname)
             continue
         if not os.path.isfile( fname ):
-            rd(fname)
+            re.rd(fname)
         
-
 def ellk(a,r):
     ekval = ek(a,r)
     lkval = lk(a,r)
@@ -140,17 +140,17 @@ def Ebindisco(a):
 
 def mkmov_simple(starti=0,endi=400):
     for i in range(starti,endi+1):
-        rd("dump%03d" % i);
-        aphi=psicalc()
+        re.rd("dump%03d" % i);
+        aphi=re.psicalc()
         if i == starti: amax = aphi.max()
-        cs, cb = plco(np.log10(rho),levels=np.linspace(-8,0,100),isfilled=1,k=0,xy=1,xmax=10,ymax=5,dobh=1,cb=1,extend="both",pretty=1)
+        cs, cb = plco(np.log10(re.rho),levels=np.linspace(-8,0,100),isfilled=1,k=0,xy=1,xmax=10,ymax=5,dobh=1,cb=1,extend="both",pretty=1)
         ax = plt.gca()
         ax.set_xlabel(r"$R\ [r_g]$",fontsize=20,labelpad=-5)
         ax.set_ylabel(r"$z\ [r_g]$",fontsize=20,labelpad=-5)
         cb.ax.set_xlabel(r"$\log\rho$",fontsize=20,ha="left")
         plc(aphi,levels=np.linspace(-amax,amax,10)[1:-1],colors="white",linewidths=2,xy=-1)
         print(i);
-        plt.title("t=%.4g"%np.round(t)); 
+        plt.title("t=%.4g"%np.round(re.t)); 
         plt.draw();
         plt.savefig("frame%03d.png"%i)
 
@@ -176,10 +176,10 @@ def mkmov(startn=0,endn=-1,ln=10,whichi=0,whichn=1,**kwargs):
     which = kwargs.pop("which","mkfrm8panel")
     dosavefig = kwargs.pop("dosavefig",1)
     print("Doing %s movie" % which)
-    rg("gdump")
+    re.rg("gdump")
     #compute the total magnetic flux at t = 0
-    rd("dump000")
-    aphi=psicalc()
+    re.rd("dump000")
+    aphi=re.psicalc()
     aphimax = aphi.max()
     #construct file list
     flist1 = np.sort(glob.glob( os.path.join("dumps/", "dump[0-9][0-9][0-9]") ) )
@@ -230,7 +230,7 @@ def mkmov(startn=0,endn=-1,ln=10,whichi=0,whichn=1,**kwargs):
 #############
 def mkfrmsimple(fig=None,aphimax=None,lnx=100,lny=100,vmin=-10,vmax=1,fntsize=20,asp=1.):
     if fig is None: fig = plt.gcf();
-    aphi = psicalc() #vpot[3].mean(-1)
+    aphi = re.psicalc() #vpot[3].mean(-1)
     if aphimax is None: aphimax = aphi.max()
     #ax.set_aspect(asp)
     res,cb=plco(lrho,xy=1,xmax=lnx,ymax=lny,symmx=1,
@@ -307,18 +307,18 @@ def Qmri(dir=2):
     """
     APPROXIMATELY Computes number of theta cells resolving one MRI wavelength
     """
-    global bu,rho,uu,_dx2,_dx3
+    #    global bu,rho,uu,_dx2,_dx3
     #cvel()
     #corrected this expression to include both 2pi and dxdxp[3][3]
     #also corrected defition of va^2 to contain bsq+gam*ug term
     #need to figure out how to properly measure this in fluid frame
-    vaudir = old_div(np.abs(bu[dir]),np.sqrt(rho+bsq+gam*ug))
-    omega = dxdxp[3][3]*uu[3]/uu[0]+1e-15
+    vaudir = old_div(np.abs(re.bu[dir]),np.sqrt(re.rho+re.bsq+re.gam*re.ug))
+    omega = re.dxdxp[3][3]*re.uu[3]/re.uu[0]+1e-15
     lambdamriudir = 2*np.pi * vaudir / omega
     if dir == 2:
-        res=old_div(lambdamriudir,_dx2)
+        res=old_div(lambdamriudir,re._dx2)
     elif dir == 3:
-        res=old_div(lambdamriudir,_dx3)
+        res=old_div(lambdamriudir,re._dx3)
     return(res)
 
 def goodlabs(fntsize=20):
@@ -326,28 +326,27 @@ def goodlabs(fntsize=20):
     for label in ax.get_xticklabels() + ax.get_yticklabels():
         label.set_fontsize(fntsize)
 
-
-
 def iofr(rval):
     rval = np.array(rval)
-    if np.max(rval) < r[0,0,0]:
+    if np.max(rval) < re.r[0,0,0]:
         return 0
-    res = interp1d(r[:,0,0], ti[:,0,0], kind='linear', bounds_error = False, fill_value = 0)(rval)
+    res = interp1d(re.r[:,0,0], re.ti[:,0,0], kind='linear', bounds_error = False, fill_value = 0)(rval)
     if len(res.shape)>0 and len(res)>0:
-        res[rval<r[0,0,0]]*=0
-        res[rval>r[nx-1,0,0]]=res[rval>r[nx-1,0,0]]*0+nx-1
+        res[rval<re.r[0,0,0]]*=0
+        res[rval>re.r[re.nx-1,0,0]]=res[rval>re.r[re.nx-1,0,0]]*0+re.nx-1
     else:
         res = np.float64(res)
     return(np.floor(res+0.5).astype(int))
 
 
 def plco(myvar,**kwargs):
-    global r,h,ph
+#    global r,h,ph
     plt.clf()
     return plc(myvar,**kwargs)
 
 def plc(myvar,**kwargs): #plc
-    global r,h,ph
+#    global r,h,ph
+    r=re.r ; h=re.h ; ph=re.ph
     #xcoord = kwargs.pop('x1', None)
     #ycoord = kwargs.pop('x2', None)
     if(np.min(myvar)==np.max(myvar)):
@@ -379,8 +378,8 @@ def plc(myvar,**kwargs): #plc
     cbticks = kwargs.pop("cbticks",None)
     domathify = kwargs.pop("domathify",0)
     if np.abs(xy)==1:
-        if xcoord is None: xcoord = r * np.sin(h)
-        if ycoord is None: ycoord = r * np.cos(h)
+        if xcoord is None: xcoord = re.r * np.sin(re.h)
+        if ycoord is None: ycoord = re.r * np.cos(re.h)
         if mirrory: ycoord *= -1
         if mirrorx: xcoord *= -1
     if xcoord is not None and ycoord is not None:
@@ -394,7 +393,7 @@ def plc(myvar,**kwargs): #plc
             ycoord=np.concatenate((ycoord[:,::-1],ycoord),axis=1)
         else:
             if myvar.shape[-1] > 1: 
-                symmk = (k+old_div(nz,2))%nz 
+                symmk = (k+old_div(re.nz,2))%re.nz 
             else: 
                 symmk = k
             myvar=np.concatenate((myvar[:,ny-1:ny,k:k+1],myvar[:,::-1,symmk:symmk+1],myvar[:,:,k:k+1]),axis=1)
@@ -490,17 +489,18 @@ def faraday():
         del omegaf1
     if 'omemaf2' in globals():
         del omegaf2
-    omegaf1=old_div(fFdd(0,1),fFdd(1,3))
-    omegaf2=old_div(fFdd(0,2),fFdd(2,3))
+    omegaf1=old_div(re.fFdd(0,1),re.fFdd(1,3))
+    omegaf2=old_div(re.fFdd(0,2),re.fFdd(2,3))
 
 def Tcalcud():
     global Tud, TudEM, TudMA
     global mu, sigma
     global enth
     global unb, isunbound
-    pg = (gam-1)*ug
-    w=rho+ug+pg
-    eta=w+bsq
+    pg = (re.gam-1)*re.ug
+    w=re.rho+re.ug+re.pg
+    eta=re.w+re.bsq
+    nx=re.nx ; ny=re.ny ; nz=re.nz
     if 'Tud' in globals():
         del Tud
     if 'TudMA' in globals():
@@ -522,43 +522,21 @@ def Tcalcud():
         for nu in np.arange(4):
             if(kapa==nu): delta = 1
             else: delta = 0
-            TudEM[kapa,nu] = bsq*uu[kapa]*ud[nu] + 0.5*bsq*delta - bu[kapa]*bd[nu]
-            TudMA[kapa,nu] = w*uu[kapa]*ud[nu]+pg*delta
+            TudEM[kapa,nu] = re.bsq*re.uu[kapa]*re.ud[nu] + 0.5*re.bsq*delta - re.bu[kapa]*re.bd[nu]
+            TudMA[kapa,nu] = re.w*re.uu[kapa]*re.ud[nu]+re.pg*delta
             #Tud[kapa,nu] = eta*uu[kapa]*ud[nu]+(pg+0.5*bsq)*delta-bu[kapa]*bd[nu]
             Tud[kapa,nu] = TudEM[kapa,nu] + TudMA[kapa,nu]
     mu = old_div(-Tud[1,0],(rho*uu[1]))
     sigma = old_div(TudEM[1,0],TudMA[1,0])
-    enth=1+ug*gam/rho
-    unb=enth*ud[0]
+    enth=1+re.ug*re.gam/re.rho
+    unb=enth*re.ud[0]
     isunbound=(-unb>1.0)
-
 
 def aux():
     faraday()
     Tcalcud()
 
-if __name__ == "__main__":
-    if False:
-        #1D plot example
-        plt.clf()
-        rg("gdump")
-        rd("dump000")
-        plt.plot(r[:,old_div(ny,2),0],rho[:,old_div(ny,2),0])
-        plt.xscale("log")
-        plt.yscale("log")
-        plt.xlabel("r")
-        plt.ylabel("rho")
-    if False:
-        #2D plot example
-        plt.clf()
-        rg("gdump")
-        rd("dump000")
-        #R-z plot of the logarithm of density distribution
-        plc(r,np.log10(rho),cb=True,xy=1,xmax=100,ymax=50)
-
-
 def bhole():
-
     ax = plt.gca()
     el = Ellipse((0,0), 2*rhor, 2*rhor, facecolor='k', alpha=1)
     art=ax.add_artist(el)
@@ -567,7 +545,7 @@ def bhole():
 
 def testfail(fldname = "dump000"):
     try: 
-        rd(fldname)
+        re.rd(fldname)
     except IOError as e:
         print("I/O error({0}): {1}".format(e.errno, e.strerror))
 
@@ -583,8 +561,8 @@ def get_sorted_file_list(prefix="dump"):
     return flist
     
 
-
 def fFdd(i,j):
+    uu=re.uu ; ud=re.ud ; bu=re.bu ; bd=re.bd
     if i==0 and j==1:
         fdd =  gdet*(uu[2]*bu[3]-uu[3]*bu[2]) # f_tr
     elif i==1 and j==0:
@@ -614,8 +592,8 @@ def fFdd(i,j):
     return fdd
 
 delta = lambda kapa,nu: (kapa==nu)
-fTudEM = lambda kapa,nu: bsq*uu[kapa]*ud[nu] + 0.5*bsq*delta(kapa,nu) - bu[kapa]*bd[nu]
-fTudMA = lambda kapa,nu: (rho+gam*ug)*uu[kapa]*ud[nu]+(gam-1)*ug*delta(kapa,nu)
+fTudEM = lambda kapa,nu: re.bsq*re.uu[kapa]*re.ud[nu] + 0.5*re.bsq*delta(kapa,nu) - re.bu[kapa]*re.bd[nu]
+fTudMA = lambda kapa,nu: (re.rho+re.gam*re.ug)*re.uu[kapa]*re.ud[nu]+(re.gam-1)*re.ug*delta(kapa,nu)
 fTud = lambda kapa,nu: fTudEM(kapa,nu) + fTudMA(kapa,nu)
 fRud = lambda kapa,nu: 4./3.*Erf*uradu[kapa]*uradd[nu]+1./3.*Erf*delta(kapa,nu)
 
@@ -628,57 +606,38 @@ def odot(a,b):
             outer_product[mu,nu] = a[mu]*b[nu]
     return(outer_product)
 
-
-def amax(arg1,arg2):
-    return(np.maximum(arg1,arg2))
-
-def amin(arg1,arg2):
-    return(np.minimum(arg1,arg2))
-
 # origin plots:
 def origin_plot(dumpn, xmax=30.):
-    filename=dumpname(dumpn)
-    plt.clf()
-    rg("gdump")
-    rd(filename)
+    filename=re.dumpname(dumpn)
+    re.rg("gdump")
+    re.rd(filename)
+    r=re.r ; h=re.h ; ph=re.ph ; rho=re.rho ; origin_r=re.origin_r; origin_th=re.origin_th
     nxx=10
     rlevs=xmax*np.arange(nxx)/np.double(nxx) ; thlevs=np.pi*np.arange(nxx)/np.double(nxx)
-    plt.contourf((r*sin(h))[:,:,0], (r*cos(h))[:,:,0], np.log10(rho[:,:,0]))
-    plt.contour((r*sin(h))[:,:,0], (r*cos(h))[:,:,0], r[:,:,0], levels=rlevs, colors='w')
-    plt.contour((r*sin(h))[:,:,0], (r*cos(h))[:,:,0], origin_r[:,:,0], levels=rlevs, colors='k')
-    plt.contour((r*sin(h))[:,:,0], (r*cos(h))[:,:,0], h[:,:,0], levels=thlevs, colors='w')
-    plt.contour((r*sin(h))[:,:,0], (r*cos(h))[:,:,0], origin_th[:,:,0], levels=thlevs, colors='k')
+    x=np.squeeze((r*sin(h))[:,:,0]) ; y=np.squeeze((r*cos(h))[:,:,0])
+    
+    plt.clf()
+    #    plco(rho, xy=1, isfilled=True)
+    #    plc(re.r, xy=1,levels=rlevs, colors='w')
+    #    plc(re.origin_r, xy=1,levels=rlevs, colors='k')
+    #    plc(re.h, xy=1,levels=rlevs, colors='w')
+    #    plc(re.origin_th, xy=1,levels=rlevs, colors='k')
+    plt.contourf(x, y, np.squeeze(rho[:,:,0]))
+    plt.contour(x, y, np.squeeze(r[:,:,0]), levels=rlevs, colors='w')
+    plt.contour(x, y, np.squeeze(origin_r[:,:,0]), levels=rlevs, colors='k')
+    plt.contour(x, y, np.squeeze(h[:,:,0]), levels=thlevs, colors='w')
+    plt.contour(x, y, np.squeeze(origin_th[:,:,0]), levels=thlevs, colors='k')
     plt.xlim(0., xmax) ; plt.ylim(-xmax/2., xmax/2.)
     plt.savefig("dumps/"+filename+"_ori.png")
-
+    plt.close()
+    plt.clf()
+    plt.plot(np.squeeze(r), np.squeeze(r), 'r')
+    plt.plot(np.squeeze(r), np.squeeze(origin_r), '.k')
+    plt.xlim(0., xmax) ; plt.ylim(0., xmax)
+    plt.savefig("oritest.png")
+    
 def origins(n1, n2):   
-    for k in arange(n2-n1)+n1:
-        origin_plot(k, xmax=30.)
-    
-#############################
-#
-# End of movie making
-#
-#############################
-        
-    
-if __name__ == "__main__":
-    if len(sys.argv)>1:
-        if sys.argv[1].startswith("mkfrm"):
-            mkmov_wrapper(which=sys.argv[1])
-        elif sys.argv[1].startswith("convertdump"):
-            convert_wrapper(which=sys.argv[1])
-        else:
-            print( "Unknown command %s" % sys.argv[1] )
-    else:
-        if False:
-            #1D plot example
-            plt.clf()
-            rg("gdump")
-            rd("dump000")
-            plt.loglog(r[:,old_div(ny,2),0],rho[:,old_div(ny,2),0])
-            plt.xlabel("r")
-            plt.ylabel("rho")
-            plt.savefig("dumptest.eps")
-
+    for k in np.arange(n2-n1)+n1:
+        origin_plot(k, xmax=20.)
+ 
 # ffmpeg -f image2 -r 15 -pattern_type glob -i 'dumps/dump*.png' -pix_fmt yuv420p -b 4096k orimovie.mp4

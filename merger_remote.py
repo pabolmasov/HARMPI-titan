@@ -109,7 +109,7 @@ def dumpinfo(prefix):
 # calculated and writes out evolution of some global parameters; rref is the radius at which the mass and momentum flows are calculated
 def glevol(nmax, rref):
 #    global rho, uu
-    rg("gdump")
+    re.rg("gdump")
     gdet=re.gdet ; gcov=re.gcov ; _dx2=re._dx2 ; _dx3=re._dx3
     # rref is reference radius
     run=unique(re.r)
@@ -121,24 +121,24 @@ def glevol(nmax, rref):
 
     for k in arange(nmax):
         fname=re.dumpname(k)
-	print("reading "+str(fname))
+        print("reading "+str(fname))
         re.rd(fname)
-	print("rho is "+str(shape(re.rho)))
+        print("rho is "+str(shape(re.rho)))
         #        Tcalcud()
         # accretion rate at rref
-	rhom=(re.rho).mean(axis=2) ;  uum=(re.uu).mean(axis=3)
+        rhom=(re.rho).mean(axis=2) ;  uum=(re.uu).mean(axis=3)
         rhom_south(re.rho*cos(re.h)).mean(axis=2)
         rhom_east(re.rho*sin(re.h)).mean(axis=2)
         # do we need to multiply this by drdx??
         #        uum[0]=(uu[0]*drdx[0,0]).mean(axis=3) ;    uum[1]=(uu[1]*drdx[1,1]).mean(axis=3)
         #        uum[2]=(uu[2]*drdx[2,2]).mean(axis=3) ;    uum[2]=(uu[2]*drdx[2,2]).mean(axis=3)
         gm=sqrt(old_div(gdet,gcov[1,1]))[:,0,:]
-	maccre=-trapz((rhom*uum[1]*(uum[1]<0.)*gm)[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
-	maccre_south=-trapz((rhom_south*uum[1]*(uum[1]<0.)*gm)[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
-	maccre_east=-trapz((rhom_east*uum[1]*(uum[1]<0.)*gm)[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
+        maccre=-trapz((rhom*uum[1]*(uum[1]<0.)*gm)[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
+        maccre_south=-trapz((rhom_south*uum[1]*(uum[1]<0.)*gm)[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
+        maccre_east=-trapz((rhom_east*uum[1]*(uum[1]<0.)*gm)[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
         mwind=-trapz((rhom*uum[1]*(uum[1]>0.)*gm)[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
         laccre=-trapz((rho*fabs(old_div(ud[3],ud[0]))*uu[1]*(uu[1]<0.)*sqrt(old_div(gdet,gcov[1,1]))).mean(axis=2)[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
-	lwind=-trapz((rho*fabs(old_div(ud[3],ud[0]))*uu[1]*(uu[1]>0.)*sqrt(old_div(gdet,gcov[1,1]))).mean(axis=2)[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
+        lwind=-trapz((rho*fabs(old_div(ud[3],ud[0]))*uu[1]*(uu[1]>0.)*sqrt(old_div(gdet,gcov[1,1]))).mean(axis=2)[nr,:], x=re.h[nr,:,0])*_dx2*_dx3
         # maccre=-((rho*uu[1]*sqrt(gdet/gcov[1,1]))[nr,:,:]).sum()*_dx2*_dx3
         fmdot.write(str(t)+" "+str(maccre)+" "+str(mwind)+" "+str(old_div(laccre,maccre))+" "+str(old_div(lwind,mwind))+" "+str(maccre_south)+" "+str(maccre_east)+"\n")
     
@@ -187,8 +187,8 @@ def readndump(n1, n2, rref=5.0):
         fname=re.dumpname(k)
         re.rd(fname)
         Tcalcud()
-	p=(re.gam-1.)*re.ug
-	magp=old_div(re.bsq,2.)
+        p=(re.gam-1.)*re.ug
+        magp=old_div(re.bsq,2.)
         rho=re.rho ; uu=re.uu ; ud=re.ud 
         if(k==n1):
             rhomean=rho
@@ -209,9 +209,9 @@ def readndump(n1, n2, rref=5.0):
 
             tudem=re.TudEM ; tudma=re.TudMA
             pmean=p
-	   # unorm=uaver
-	    magp_mean=magp
-	    aphi=re.psicalc()
+	    # unorm=uaver
+            magp_mean=magp
+            aphi=re.psicalc()
         else:
             rhomean+=rho
             rhosqmean+=rho**2
@@ -230,11 +230,11 @@ def readndump(n1, n2, rref=5.0):
             mpuup+=uu[3]*magp ; mpudp+=ud[3]*magp
 
             pmean+=p
-	    magp_mean+=magp
-	    aphi+=re.psicalc()
-#	    unorm+=uaver
-	    tudem+=re.TudEM ; tudma+=re.TudMA
-	maccre, mwind, laccre, lwind = mint(rref)
+            magp_mean+=magp
+            aphi+=re.psicalc()
+            #	    unorm+=uaver
+            tudem+=re.TudEM ; tudma+=re.TudMA
+        maccre, mwind, laccre, lwind = mint(rref)
         fmdot.write(str(re.t)+" "+str(maccre)+" "+str(mwind)+" "+str(old_div(laccre,maccre))+" "+str(old_div(lwind,mwind))+"\n")
     fmdot.close()
     # velocity normalization:
@@ -256,8 +256,8 @@ def readndump(n1, n2, rref=5.0):
     aphi/=double(nframes)
     # physical stress-energy tensor components:
     for k in arange(4):
-	for j in arange(4):
-	    tudem[k,j]*=drdx[k,k]/drdx[j,j]*sqrt(guu[k,k]*gdd[j,j])
+        for j in arange(4):
+            tudem[k,j]*=drdx[k,k]/drdx[j,j]*sqrt(guu[k,k]*gdd[j,j])
             tudma[k,j]*=drdx[k,k]/drdx[j,j]*sqrt(guu[k,k]*gdd[j,j])
 
 	#   ss=shape(rhomean) 
@@ -268,8 +268,8 @@ def readndump(n1, n2, rref=5.0):
     fout=open('merge_rho3d.dat', 'w')
     for kx in arange(nx):
         for ky in arange(ny):
-	    for kz in arange(nz):
-            	fout.write(str(rho3d[kx,ky, kz])+'\n')
+            for kz in arange(nz):
+                fout.write(str(rho3d[kx,ky, kz])+'\n')
     fout.close()
     fout=open('merge_p3d.dat', 'w')
     for kx in arange(nx):
@@ -326,7 +326,7 @@ def readndump(n1, n2, rref=5.0):
     fout=open('merge_phi.dat', 'w')
     # phi mesh
     for kz in arange(nz):
-	fout.write(str(phi[0,0,kz])+'\n')
+        fout.write(str(phi[0,0,kz])+'\n')
     fout.close()   
     fout=open('merge_rho.dat', 'w')
     # rho on the mesh
@@ -562,7 +562,7 @@ def fromabove(fname, htor=0.1, alifactor=1):
             for kz in arange(re.nz):
                 foutrho.write(str(rhomean[kx,kz])+'\n')
                 foutp.write(str(ugmean[kx,kz]*(re.gam-1.))+'\n')
-		foutpm.write(str(pmag[kx,kz])+'\n')
+                foutpm.write(str(pmag[kx,kz])+'\n')
                 foutu.write(str(uumean0[kx,kz])+' '+str(uumeanr[kx,kz])+' '+str(uumeanh[kx,kz])+' '+str(uumeanp[kx,kz])+'\n')
                 foutd.write(str(udmean0[kx,kz])+' '+str(udmeanr[kx,kz])+' '+str(udmeanh[kx,kz])+' '+str(udmeanp[kx,kz])+'\n')
                 foutup.write(str(uumean0_p[kx,kz])+' '+str(uumeanr_p[kx,kz])+' '+str(uumeanh_p[kx,kz])+' '+str(uumeanp_p[kx,kz])+'\n')
@@ -640,7 +640,7 @@ def framerip(fname, alifactor=1):
                     foutpm.write(str(old_div(pmag[kx,ky],2.))+'\n')
                     foutu.write(str(uu0[kx,ky])+' '+str(uur[kx,ky])+' '+str(uuh[kx,ky])+' '+str(uup[kx,ky])+'\n')
                     foutd.write(str(ud0[kx,ky])+' '+str(udr[kx,ky])+' '+str(udh[kx,ky])+' '+str(udp[kx,ky])+'\n')
-		    foutb.write(str(B[1, kx,ky])+' '+str(B[2, kx,ky])+' '+str(B[3, kx,ky])+' '+str(aphi[kx,ky])+'\n')
+                    foutb.write(str(B[1, kx,ky])+' '+str(B[2, kx,ky])+' '+str(B[3, kx,ky])+' '+str(aphi[kx,ky])+'\n')
     foutb.close()
     foutrho.close()
     foutp.close()
@@ -667,12 +667,12 @@ def defaultrun():
     print(str(nlist)+" files")
     print(flist)
     for k in arange(nlist):
-	dumpinfo("../"+flist[k])
-	framerip("../"+flist[k], alifactor=3)
-	maccre, mwind, laccre, lwind = mint(rref)
-	fromabove("../"+flist[k], alifactor=3)
+        dumpinfo("../"+flist[k])
+        framerip("../"+flist[k], alifactor=3)
+        maccre, mwind, laccre, lwind = mint(rref)
+        fromabove("../"+flist[k], alifactor=3)
         print("merger_remote defaultrun: reducing "+str(flist[k]))
-	fout.write(str(re.t)+" "+str(maccre)+" "+str(mwind)+" "+str(laccre)+" "+str(lwind)+"\n")
+        fout.write(str(re.t)+" "+str(maccre)+" "+str(mwind)+" "+str(laccre)+" "+str(lwind)+"\n")
     fout.close()
 
 # produces time-averaged frames:
