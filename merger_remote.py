@@ -576,7 +576,8 @@ def fromabove(fname, htor=0.1, alifactor=1):
     foutdp.close()
     os.system('tar -cf dumps/'+fname+'_eq.tar dumps/'+fname+'_dinfo.dat dumps/'+fname+'_eq_*.dat')
 
-# reading one frame and making it lighter and 2D and saving as an ascii
+########################################################################################################################    
+# reading one frame and making it lighter and 2D (by averaging over phi) and saving as an ascii
 def framerip(fname, alifactor=1):
 #    global rho, ug, uu, ud, gam, B, aphi
     # alifactor = alias factor, every alifactorth point in r and th will be outputted, phi averaged over
@@ -586,7 +587,11 @@ def framerip(fname, alifactor=1):
 	#    print(rho)
     run=unique(re.r) ;    hun=unique(re.h)
     drdx=re.drdx ; uu=re.uu ; ud=re.ud ; rho=re.rho ; ug=re.ug ; B=re.B; bsq=re.bsq # can we just import all the data?
-
+    # origin variables:
+    orr=(re.origin_r*rho).mean(axis=2)/rho.mean(axis=2)
+    orth=(re.origin_th*rho).mean(axis=2)/rho.mean(axis=2)
+    orphi=(re.origin_phi*rho).mean(axis=2)/rho.mean(axis=2)
+    
     ug=ug.mean(axis=2)
 #    uu[0]*=drdx[0,0]  ; uu[1]*=drdx[1,1]  ; uu[2]*=drdx[2,2]  ; uu[3]*=drdx[3,3]  # to physical
     uu0=old_div((uu[0]*rho*drdx[0,0]).mean(axis=2),rho.mean(axis=2))
@@ -630,6 +635,7 @@ def framerip(fname, alifactor=1):
     foutu=open("dumps/"+fname+'_uu.dat', 'w')
     foutd=open("dumps/"+fname+'_ud.dat', 'w')
     foutb=open("dumps/"+fname+'_b.dat', 'w')
+    foutori=open("dumps/"+fname+'_ori.dat', 'w')
     # rho on the mesh
     for kx in arange(re.nx):
         if(kx%alifactor==0):
@@ -641,7 +647,9 @@ def framerip(fname, alifactor=1):
                     foutu.write(str(uu0[kx,ky])+' '+str(uur[kx,ky])+' '+str(uuh[kx,ky])+' '+str(uup[kx,ky])+'\n')
                     foutd.write(str(ud0[kx,ky])+' '+str(udr[kx,ky])+' '+str(udh[kx,ky])+' '+str(udp[kx,ky])+'\n')
                     foutb.write(str(B[1, kx,ky])+' '+str(B[2, kx,ky])+' '+str(B[3, kx,ky])+' '+str(aphi[kx,ky])+'\n')
+                    foutori.write(str(orr[kx,ky])+' '+str(orth[kx,ky])+' '+str(orphi[kx,ky])+'\n')
     foutb.close()
+    foutori.close()
     foutrho.close()
     foutp.close()
     foutpm.close()

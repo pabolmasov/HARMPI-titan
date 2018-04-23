@@ -67,8 +67,8 @@ def dinforead(prefix):
     return nr, nh, nphi, a, t
 
 def tedplotter(dire):
-    nr, nh, nphi, a, t=dinforead('/home/pasha/harm/harmpi/'+dire+'/merge')
-    rfile='/home/pasha/harm/harmpi/'+dire+'/merge_r.dat'
+    nr, nh, nphi, a, t=dinforead(dire+'/merge')
+    rfile=dire+'/merge_r.dat'
     fr=open(rfile, 'r')
     s=str.split(str.strip(fr.readline()))
     r=[]
@@ -96,7 +96,7 @@ def tedplotter(dire):
     print(nr, nh)
 
     # pressure:
-    pfile='/home/pasha/harm/harmpi/'+dire+'/merge_p.dat'
+    pfile=dire+'/merge_p.dat'
     fp=open(pfile, 'r')
     s=str.split(str.strip(fp.readline()))
     p=[]
@@ -108,7 +108,7 @@ def tedplotter(dire):
 
     # TudMA, TudEM
     trr=[] ; thh=[] ; tpp=[] ; trp=[] ; thp=[]
-    tmafile='/home/pasha/harm/harmpi/'+dire+'/merge_tudma.dat'
+    tmafile=dire+'/merge_tudma.dat'
     ftma=open(tmafile, 'r')
     s=str.split(str.strip(ftma.readline()))
     rho=[]
@@ -126,7 +126,7 @@ def tedplotter(dire):
     trp=reshape(asarray(trp, dtype=double), [nr, nh]) 
     thp=reshape(asarray(thp, dtype=double), [nr, nh]) 
     emtrr=[] ; emthh=[] ; emtpp=[] ; emtrp=[] ; emthp=[]
-    temfile='/home/pasha/harm/harmpi/'+dire+'/merge_tudem.dat'
+    temfile=dire+'/merge_tudem.dat'
     ftem=open(temfile, 'r')
     s=str.split(str.strip(ftem.readline()))
     rho=[]
@@ -183,10 +183,11 @@ def tedplotter(dire):
     title(r'$\alpha_{z\varphi}$')
     fig.set_size_inches(15, 5)
     fig.tight_layout(pad=0., h_pad=-2.)
-    savefig('/home/pasha/harm/harmpi/'+dire+'/alphas.eps')
+    savefig(dire+'/alphas.eps')
     close()
-    
-def velread(prefix, nope=False, ifaphi=True):
+
+# reading all the averaged maps of the variables
+def velread(prefix='merge_', nope=False, ifaphi=True):
     # prefix = 'titan2/merge_'
     rfile=prefix+'_r.dat'
     fr=open(rfile, 'r')
@@ -282,109 +283,8 @@ def velread(prefix, nope=False, ifaphi=True):
         aphi=rho
             
     return r2, h2, rho, p, mp, u0, ur, uh, up, pu0, pur, puh, pup, mpu0, mpur, mpuh, mpup, aphi
-    
-def velevol():
 
-    dire='titan2'
-
-    r2, h2, rhoA, pA, pmA, u0A, urA, uhA, upA, pu0A, purA, puhA, pupA = velread(dire+'/mergeA')
-    r2, h2, rhoB, pB, pmB, u0B, urB, uhB, upB, pu0B, purB, puhB, pupB = velread(dire+'/mergeB')
-    r2, h2, rhoC, pC, pmC, u0C, urC, uhC, upC, pu0C, purC, puhC, pupC = velread(dire+'/mergeC')
-    r2, h2, rhoD, pD, pmD, u0D, urD, uhD, upD, pu0D, purD, puhD, pupD = velread(dire+'/mergeD')
-    
-    # flow lines:
-    nx=20 ; ny=21
-    xmin=0. ; xmax=30.
-    ymin=-10. ; ymax=10.
-    xscale=xmax ;     hdisk=0.25
-
-    xflow=(xmax-xmin)*(arange(nx)+0.5)/double(nx)+xmin ;   yflow=(ymax-ymin)*(arange(ny)+0.5)/double(ny)+ymin
-    x2,y2=meshgrid(xflow, yflow)
-    xgrid=(r2*sin(h2)).flatten()  ;  ygrid=(r2*cos(h2)).flatten()
-    vxAflow=(urA*sin(h2)+uhA*cos(h2)).flatten() ; vyAflow=(-uhA*sin(h2)+urA*cos(h2)).flatten()
-    pvxAflow=(purA*sin(h2)+puhA*cos(h2)).flatten() ; pvyAflow=(-puhA*sin(h2)+purA*cos(h2)).flatten()
-    vxBflow=(urB*sin(h2)+uhB*cos(h2)).flatten() ; vyBflow=(-uhB*sin(h2)+urB*cos(h2)).flatten()
-    pvxBflow=(purB*sin(h2)+puhB*cos(h2)).flatten() ; pvyBflow=(-puhB*sin(h2)+purB*cos(h2)).flatten()
-    vxCflow=(urC*sin(h2)+uhC*cos(h2)).flatten() ; vyCflow=(-uhC*sin(h2)+urC*cos(h2)).flatten()
-    pvxCflow=(purC*sin(h2)+puhC*cos(h2)).flatten() ; pvyCflow=(-puhC*sin(h2)+purC*cos(h2)).flatten()
-    vxDflow=(urD*sin(h2)+uhD*cos(h2)).flatten() ; vyDflow=(-uhD*sin(h2)+urD*cos(h2)).flatten()
-    pvxDflow=(purD*sin(h2)+puhD*cos(h2)).flatten() ; pvyDflow=(-puhD*sin(h2)+purD*cos(h2)).flatten()
-    vxA=griddata(list(zip(xgrid, ygrid)),vxAflow, (x2,y2),method='nearest') ; vyA=griddata(list(zip(xgrid, ygrid)),vyAflow, (x2,y2),method='nearest')
-    pvxA=griddata(list(zip(xgrid, ygrid)),pvxAflow, (x2,y2),method='nearest') ; pvyA=griddata(list(zip(xgrid, ygrid)),pvyAflow, (x2,y2),method='nearest')
-    vxB=griddata(list(zip(xgrid, ygrid)),vxBflow, (x2,y2),method='nearest') ; vyB=griddata(list(zip(xgrid, ygrid)),vyBflow, (x2,y2),method='nearest')
-    pvxB=griddata(list(zip(xgrid, ygrid)),pvxBflow, (x2,y2),method='nearest') ; pvyB=griddata(list(zip(xgrid, ygrid)),pvyBflow, (x2,y2),method='nearest')
-    vxC=griddata(list(zip(xgrid, ygrid)),vxCflow, (x2,y2),method='nearest') ; vyC=griddata(list(zip(xgrid, ygrid)),vyCflow, (x2,y2),method='nearest')
-    pvxC=griddata(list(zip(xgrid, ygrid)),pvxCflow, (x2,y2),method='nearest') ; pvyC=griddata(list(zip(xgrid, ygrid)),pvyCflow, (x2,y2),method='nearest')
-    vxD=griddata(list(zip(xgrid, ygrid)),vxDflow, (x2,y2),method='nearest') ; vyD=griddata(list(zip(xgrid, ygrid)),vyDflow, (x2,y2),method='nearest')
-    pvxD=griddata(list(zip(xgrid, ygrid)),pvxDflow, (x2,y2),method='nearest') ; pvyD=griddata(list(zip(xgrid, ygrid)),pvyDflow, (x2,y2),method='nearest')
-   
-    uratA=old_div((purA*urA+puhA*uhA),(urA**2+uhA**2))
-    uratB=old_div((purB*urB+puhB*uhB),(urB**2+uhB**2))
-    uratC=old_div((purC*urC+puhC*uhC),(urC**2+uhC**2))
-    uratD=old_div((purD*urD+puhD*uhD),(urD**2+uhD**2))
- 
-    cmap = plt.get_cmap('jet') ; cmap.set_bad('white',1.)
-    vratmin=-0.1 # uratA[where((r2<xscale)*(h2<hdisk))].min()
-    vratmax=1.5 # uratA[where((r2<xscale)*(h2<hdisk))].max()
-    vratlevs=arange(20)/double(20)*(vratmax-vratmin)+vratmin
-    vratlevs[19]=2.
-    vratlevs[0]=-2.
-    #    norm = BoundaryNorm(vratlevs, ncolors=cmap.N, clip=True)
-
-    nr, nh, nphi, a, t=dinforead(dire+'/merge')
-    rhor = 1.+(1.-a**2)**0.5
-
-    clf()
-    fig=figure()
-    subplot(411)
-    contourf(r2*sin(h2), r2*cos(h2), uratA, levels=vratlevs)
-    colorbar()
-    contour(r2*sin(h2), r2*cos(h2), uratA, levels=[1.], colors='w')
-    plot([0.,xscale], [0.,0.], color='k', linestyle='dotted')
-    streamplot(xflow, yflow, vxA, vyA,color='k')
-    xlim(0.5, xscale)
-    ylim(-xscale*hdisk, xscale*hdisk)
-#    xlabel(r'$\varpi$')
-    ylabel(r'$z$')
-    bhole(rhor)
-    subplot(412)
-    contourf(r2*sin(h2), r2*cos(h2), uratB, levels=vratlevs)
-    colorbar()
-    contour(r2*sin(h2), r2*cos(h2), uratB, levels=[1.], colors='w')
-    plot([0.,xscale], [0.,0.], color='k', linestyle='dotted')
-    streamplot(xflow, yflow, vxB, vyB,color='k')
-    xlim(0.5, xscale)
-    ylim(-xscale*hdisk, xscale*hdisk)
-#    xlabel(r'$\varpi$')
-    ylabel(r'$z$')
-    bhole(rhor)
-    subplot(413)
-    contourf(r2*sin(h2), r2*cos(h2), uratC, levels=vratlevs)
-    colorbar()
-    contour(r2*sin(h2), r2*cos(h2), uratC, levels=[1.], colors='w')
-    plot([0.,xscale], [0.,0.], color='k', linestyle='dotted')
-    streamplot(xflow, yflow, vxC, vyC,color='k')
-    xlim(0.5, xscale)
-    ylim(-xscale*hdisk, xscale*hdisk)
-#    xlabel(r'$\varpi$')
-    ylabel(r'$z$')
-    bhole(rhor)
-    subplot(414)
-    contourf(r2*sin(h2), r2*cos(h2), uratD, levels=vratlevs)
-    colorbar()
-    contour(r2*sin(h2), r2*cos(h2), uratD, levels=[1.], colors='w')
-    plot([0.,xscale], [0.,0.], color='k', linestyle='dotted')
-    streamplot(xflow, yflow, vxD, vyD,color='k')
-    xlim(0.5, xscale)
-    ylim(-xscale*hdisk, xscale*hdisk)
-    xlabel(r'$\varpi$')
-    ylabel(r'$z$')
-    bhole(rhor)
-    fig.set_size_inches(5*2, 5*8*hdisk+2.5)
-    fig.tight_layout(pad=0.5)
-    savefig('/home/pasha/harm/harmpi/'+dire+'/fourstreamband.eps')
-    close()
-
+# plots mean (phi- and t-averaged) maps of densities and velocities
 def mplotter(dire,nope=False):
 
     dmatrix=True
@@ -441,7 +341,7 @@ def mplotter(dire,nope=False):
         xlabel(r'$\cos\theta$')
         ylabel('$v/c$')
         fig.set_size_inches(12, 6)
-        savefig('/home/pasha/harm/harmpi/'+dire+'/velcompare.eps')
+        savefig(dire+'/velcompare.eps')
         close()
         
     ono=20 # number of angular frequency levels
@@ -469,7 +369,7 @@ def mplotter(dire,nope=False):
     xlabel(r'$\varpi$')
     ylabel(r'$z$')
     bhole(rhor)
-    savefig('/home/pasha/harm/harmpi/'+dire+'/rho.eps')
+    savefig(dire+'/rho.eps')
     # beta magnetization plot:
     beta1=0.1 ; beta2=100. ; nbeta=30
     betalevs=log10((old_div(beta2,beta1))**(old_div(arange(nbeta),double(nbeta-1)))*beta1)
@@ -482,7 +382,7 @@ def mplotter(dire,nope=False):
     xlabel(r'$\varpi$')
     ylabel(r'$z$')
     bhole(rhor)
-    savefig('/home/pasha/harm/harmpi/'+dire+'/beta.eps')
+    savefig(dire+'/beta.eps')
     # radial velocity
     clf()
     fig=figure()
@@ -496,7 +396,7 @@ def mplotter(dire,nope=False):
     ylabel(r'$z$')
     bhole(rhor)
     fig.set_size_inches(8, 8)
-    savefig('/home/pasha/harm/harmpi/'+dire+'/omega.eps')
+    savefig(dire+'/omega.eps')
     vlevs=(arange(ono)/double(ono)*2.-1.)*0.01
     vlevs[0]=ur.min()*1.1
     vlevs[ono-1]=ur.max()*1.1
@@ -552,7 +452,7 @@ def mplotter(dire,nope=False):
     ylabel(r'$z$')
     bhole(rhor)
     fig.set_size_inches(15, 8)
-    savefig('/home/pasha/harm/harmpi/'+dire+'/stream.eps')
+    savefig(dire+'/stream.eps')
     close()
     # near eqplane:
     xscale=10.
@@ -585,8 +485,8 @@ def mplotter(dire,nope=False):
     bhole(rhor)
     fig.set_size_inches(5*2+1, 5*2*hdisk+1.5)
     fig.tight_layout(pad=0.5)
-    savefig('/home/pasha/harm/harmpi/'+dire+'/streamband.eps')
-    savefig('/home/pasha/harm/harmpi/'+dire+'/streamband.jpg')
+    savefig(dire+'/streamband.eps')
+    savefig(dire+'/streamband.jpg')
     close()
     vratmin=0.5 # 0.2
     vratmax=2.5 # 1.
@@ -608,8 +508,8 @@ def mplotter(dire,nope=False):
     bhole(rhor)
     fig.set_size_inches(5*2+1, 5*2*hdisk+1.5)
     fig.tight_layout(pad=0.5)
-    savefig('/home/pasha/harm/harmpi/'+dire+'/streamband_mag.eps')
-    savefig('/home/pasha/harm/harmpi/'+dire+'/streamband_mag.jpg')
+    savefig(dire+'/streamband_mag.eps')
+    savefig(dire+'/streamband_mag.jpg')
     close()
 
     # vertical slice:
@@ -652,7 +552,7 @@ def mplotter(dire,nope=False):
     xlabel(r'$\varpi$')
     ylabel(r'$z$')
     bhole(rhor)
-    savefig('/home/pasha/harm/harmpi/'+dire+'/uh.eps')
+    savefig(dire+'/uh.eps')
     # turbulent velocity parameters:
     vmin=1e-8
     vmax=10.
@@ -673,7 +573,7 @@ def mplotter(dire,nope=False):
         xlabel(r'$\varpi$')
         ylabel(r'$z$')
         bhole(rhor)
-        savefig('/home/pasha/harm/harmpi/'+dire+'/vturb.eps')
+        savefig(dire+'/vturb.eps')
         close()
         vlevs=(2.*(old_div(arange(ono),double(ono-1)))-1.)*0.5
         vlevs[0]=-1.
@@ -764,7 +664,7 @@ def mplotter(dire,nope=False):
         bhole(rhor)
         fig.set_size_inches(12, 12)
         fig.tight_layout(pad=1.0,h_pad=0.5, w_pad=0.5)
-        savefig('/home/pasha/harm/harmpi/'+dire+'/dmatrix.eps')
+        savefig(dire+'/dmatrix.eps')
         close()
 
     if(dmatrix&False):
@@ -797,7 +697,7 @@ def mplotter(dire,nope=False):
         xscale('log')
         xlim(1,20)
         #    ylim(-1e-2,1e-2)
-        savefig('/home/pasha/harm/harmpi/'+dire+'/dmatrix_rslice.eps')
+        savefig(dire+'/dmatrix_rslice.eps')
 
         drrvert=old_div((dxy[0,0]*rrange*rho).mean(axis=0),(rrange*rho).mean(axis=0))
         dhhvert=old_div((dxy[1,1]*rrange*rho).mean(axis=0),(rrange*rho).mean(axis=0))
@@ -815,10 +715,10 @@ def mplotter(dire,nope=False):
         plot(cos(th), old_div(dhpvert,dvertot), color='orange', linestyle='dotted')
         xlabel(r'$\cos \theta$')
         ylabel(r'$\Delta_{ik} / \Delta_{\rm tot}$')
-        savefig('/home/pasha/harm/harmpi/'+dire+'/dmatrix_thslice.eps')
+        savefig(dire+'/dmatrix_thslice.eps')
 
-# reading R\Theta file in ascii 
-def ascframe(prefix):
+# reading R\Theta file in ascii ; plotting the results of framerip
+def ascframe(prefix='dumps/dump000', xmax=20.):
 
     rfile=prefix+'_r.dat'
     hfile=prefix+'_h.dat'
@@ -828,6 +728,7 @@ def ascframe(prefix):
     uufile=prefix+'_uu.dat'
     udfile=prefix+'_ud.dat'
     bfile=prefix+'_b.dat'
+    orifile=prefix+'_ori.dat'
 
     nr, nh, nphi, a, t=dinforead(prefix)
 
@@ -896,6 +797,17 @@ def ascframe(prefix):
     omega=asarray(omega, dtype=double)
     omega=reshape(omega, [nr, nh])
 
+    # origin variables:
+    fori=open(orifile, 'r')
+    s=str.split(str.strip(fori.readline()))
+    orr=[] ; orth=[] ; orphi=[]
+    while(s):
+        orr.append(s[0]) ;  orth.append(s[1]) ;  orphi.append(s[2])
+        s=str.split(str.strip(fori.readline()))
+    fori.close()
+    orr=reshape(asarray(orr, dtype=double), [nr, nh]) 
+    orth=reshape(asarray(orth, dtype=double), [nr, nh]) 
+    orphi=reshape(asarray(orphi, dtype=double), [nr, nh]) 
     # magnetic field (the last component is A_\phi)
     fb=open(bfile, 'r')
     s=str.split(str.strip(fb.readline()))
@@ -915,17 +827,29 @@ def ascframe(prefix):
     lmax=1.
     lrholevs=(lmax-lmin)*arange(ono)/double(ono)+lmin
     norm = BoundaryNorm(lrholevs, ncolors=cmap.N, clip=True)
+    x=r2*sin(h2) ; y=r2*cos(h2)
     clf()
     fig=figure()
-    contourf(r2*sin(h2), r2*cos(h2), log10(rho+1e-3),levels=lrholevs,norm=norm,cmap=cmap)
-    contour(r2*sin(h2), r2*cos(h2), aphi, colors='k')
-    xlim(0.,20.)
-    ylim(-10.,10.)
+    contourf(x, y, log10(rho+1e-3),levels=lrholevs,norm=norm,cmap=cmap)
+    contour(x, y, aphi, colors='k')
+    xlim(0.,xmax)
+    ylim(-xmax/4.,xmax/2.)
     bhole(rhor)
     # need to put time in dinfo!
     title('t='+str(t)+' ('+prefix+')')
     savefig(prefix+'_rho.eps')
     savefig(prefix+'_rho.png')
+    close()
+    nxx=10
+    rlevs=xmax*np.arange(nxx)/np.double(nxx) ; thlevs=np.pi*np.arange(nxx)/np.double(nxx)
+    clf()
+    contourf(x, y, rho,cmap=cmap)
+    contour(x, y, r2, colors='w', levels=rlevs)
+    contour(x, y, h2, colors='w', levels=thlevs)
+    contour(x, y, orr, colors='k', levels=rlevs)
+    contour(x, y, orth, colors='k', levels=thlevs)
+    plt.xlim(0., xmax) ; plt.ylim(-xmax/4., xmax/2.)
+    plt.savefig(prefix+"_ori.png")
     close()
     lmin=0.
     lmax=3.
@@ -935,8 +859,8 @@ def ascframe(prefix):
     fig=figure()
     contourf(r2*sin(h2), r2*cos(h2), log10(old_div(p,pm)),levels=lbetalevs,norm=norm,cmap=cmap)
     contour(r2*sin(h2), r2*cos(h2), aphi, colors='k')
-    xlim(0.,20.)
-    ylim(-10.,10.)
+    xlim(0.,xmax)
+    ylim(-xmax/2.,xmax/2.)
     bhole(rhor)
     # need to put time in dinfo!
     title('t='+str(t)+' ('+prefix+')')
@@ -954,8 +878,8 @@ def ascframe(prefix):
     colorbar()
     contour(r2*sin(h2), r2*cos(h2), ur,levels=[0.], color='w', linestyles='dotted')
     contour(r2*sin(h2), r2*cos(h2), log10(rho+1e-3),levels=lrholevs, colors='w')
-    xlim(0.,20.)
-    ylim(-10.,10.)
+    xlim(0.,xmax)
+    ylim(-xmax/2.,xmax/2.)
     bhole(rhor)
     title('t='+str(t))
     savefig(prefix+'_ur.eps')
@@ -966,8 +890,8 @@ def ascframe(prefix):
     contourf(r2*sin(h2), r2*cos(h2), omega,levels=vlevs,norm=norm)
     colorbar()
     contour(r2*sin(h2), r2*cos(h2), log10(rho+1e-3),levels=lrholevs, colors='w')
-    xlim(0.,20.)
-    ylim(-10.,10.)
+    xlim(0.,xmax)
+    ylim(-xmax/2.,xmax/2.)
     bhole(rhor)
     title('t='+str(t))
     savefig(prefix+'_o.eps')
@@ -975,7 +899,7 @@ def ascframe(prefix):
     close()
 
     nx=20 ; ny=20
-    xmin=0. ; xmax=20. ; ymin=-5. ; ymax=10.
+    xmin=0. ; ymin=-xmax/4. ; ymax=xmax/2.
     xflow=(xmax-xmin)*(arange(nx)+0.5)/double(nx)+xmin ;   yflow=(ymax-ymin)*(arange(ny)+0.5)/double(ny)+ymin
     x2,y2=meshgrid(xflow, yflow)
     xgrid=(r2*sin(h2)).flatten()  ;  ygrid=(r2*cos(h2)).flatten()
