@@ -1068,3 +1068,45 @@ def dumpmovie():
     # ffmpeg -framerate 15 -pattern_type glob -i 'titan2/dump????_rho.png' -b 4096k titanic2_rho_2.mp4
     # ffmpeg -framerate 15 -pattern_type glob -i 'titan2/dump???_eq_beta.png' -b 4096k titanic2_beta1.mp4
     # ffmpeg -framerate 15 -pattern_type glob -i 'titan2/dump????_eq_beta.png' -b 4096k titanic2_beta2.mp4
+
+# making a plot of a PDS produced by powerstack
+def readsp():
+
+    qq = np.loadtxt('pdsout.dat')
+    kr=qq[:,0] ; kh=qq[:,1] ; kphi=qq[:,2] ;  pds3d=qq[:,3] ; dpds3d=qq[:,4] 
+    krun=unique(kr) ; khun=unique(kh) ; kpun=unique(kphi)
+    nr=np.size(krun) ; nh=np.size(khun) ; nphi=np.size(kpun)
+    pds3d=np.reshape(pds3d, [nr,nh,nphi])
+    dpds3d=np.reshape(dpds3d, [nr,nh,nphi])
+    kr=np.reshape(kr, [nr,nh,nphi])
+    kh=np.reshape(kh, [nr,nh,nphi])
+    kphi=np.reshape(kphi, [nr,nh,nphi])
+    krun=kr[:,0,0] ; khun=kh[0,:,0] ; kpun=kphi[0,0,:]
+    print(shape(pds3d))
+    # rk.uread('pdsout.dat')
+    # plotting
+    pds2d=pds3d.mean(axis=-1) # average over phi
+    dpds2d=dpds3d.mean(axis=-1) # average over phi
+    print(shape(pds2d))
+    pdsr=pds2d.mean(axis=1) ; dpdsr=dpds2d.mean(axis=1)
+    print(shape(pdsr))
+    pdsh=pds2d.mean(axis=0) ; dpdsh=dpds2d.mean(axis=0)
+    print(shape(pdsh))
+    if(nphi>1):
+        pdsphi=pds3d.mean(axis=0).mean(axis=0) ; dpdsphi=dpds3d.mean(axis=0).mean(axis=0)
+        
+    plt.clf()
+    plt.plot(krun, pdsr, '.k')
+    plt.errorbar(krun, pdsr, yerr=dpdsr, color='k', fmt='.')
+    plt.plot(khun, pdsh, '.g')
+    plt.errorbar(khun, pdsh, yerr=dpdsh, color='g', fmt='.')
+    if(nphi>1):
+        plt.plot(kpun, pdsphi, '.r')
+        plt.errorbar(kpun, pdsphi, yerr=dpdsphi, color='r')
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.savefig('pdss.png')
+    
+    
+    
+    

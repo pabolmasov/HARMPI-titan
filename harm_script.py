@@ -627,7 +627,8 @@ def origin_plot(dumpn, xmax=30.):
     plt.contour(x, y, np.squeeze(origin_r[:,:,0]), levels=rlevs, colors='k')
     plt.contour(x, y, np.squeeze(h[:,:,0]), levels=thlevs, colors='w')
     plt.contour(x, y, np.squeeze(origin_th[:,:,0]), levels=thlevs, colors='k')
-    plt.xlim(0., xmax) ; plt.ylim(-xmax/2., xmax/2.)
+    plt.xlim(0., xmax) ; plt.ylim(-xmax/4., xmax/2.)
+    plt.title(r"t = "+str(re.t)+" $GM/c^3$")
     plt.savefig("dumps/"+filename+"_ori.png")
     plt.close()
     plt.clf()
@@ -635,6 +636,7 @@ def origin_plot(dumpn, xmax=30.):
     plt.plot(np.squeeze(r), np.squeeze(origin_r), '.k')
     plt.xlim(0., xmax) ; plt.ylim(0., xmax)
     plt.savefig("oritest.png")
+    plt.close()
     
 def origins(n1, n2):   
     for k in np.arange(n2-n1)+n1:
