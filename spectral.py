@@ -14,21 +14,22 @@ import glob
 # from reader import *
 import reader as re
 import scipy.interpolate as si
-from matplotlib.cbook import flatten
+# import matplotlib
+# from matplotlib.cbook import flatten
 # import matplotlib.pyplot as plt
 
 # makes a Fourier transform of a patch of the simulation domain
-def snapshot(prefix, x1=10., x2=12., y1=-5., y2=5.):
+def snapshot(prefix, x1=10., x2=12., y1=-5., y2=5., ifzinout=False):
     re.rg("gdump")
     re.rd(prefix)
 
     # need to set up the coordinate network
     x=re.r*np.sin(re.h) ; y=re.r*cos(re.h)
     wbox=((((x-x1)*(x-x2))<0.)&(((y-y1)*(y-y2))<0.))
-#    print("wbox shape = "+str(shape(wbox)))
+    #    print("wbox shape = "+str(shape(wbox)))
     qty=re.rho
     # we need a way to switch between different variables
-#    print("wbox shape = "+str(shape(re.rho[wbox])))
+    #    print("wbox shape = "+str(shape(re.rho[wbox])))
     run=unique(re.r[wbox]) ;   hun=unique(re.h[wbox])
     nx=np.size(run) ; ny=np.size(hun) ; nphi=re.nz
 
@@ -38,24 +39,36 @@ def snapshot(prefix, x1=10., x2=12., y1=-5., y2=5.):
     yreg=(y2-y1)*np.arange(ny)/np.double(ny)+y1
     dx=(x2-x1)/np.double(nx) ; dy=(y2-y1)/np.double(ny) ; dphi=2.*pi/np.double(nphi)
 
-#    print("nx = "+str(nx)+", ny = "+str(ny))
+    print("nx = "+str(nx)+", ny = "+str(ny)+", nphi = "+str(nphi))
     
     zint=np.zeros([nx,ny,nphi], dtype=double)    
+    if(ifzinout):
+        fz=open('zint.dat', 'w')
     
-    for kphi in arange(nphi):
+    for kphi in np.arange(nphi):
+        wbox=((((x-x1)*(x-x2))<0.)&(((y-y1)*(y-y2))<0.)&(re.ph==re.ph[0,0,kphi]))
         #        wbox=np.where((((re.r[:,:,kphi]-r1)*(re.r[:,:,kphi]-r2))<0.)&(((re.h[:,:,kphi]-th1)*(re.h[:,:,kphi]-th2))<0.))[0]
         # rr=(re.r[:,:,kphi])[wbox] ; hh=(re.h[:,:,kphi])[wbox] ;
-        xx=x[wbox] ; yy=y[wbox] ; qq=np.reshape(qty[:,:,kphi],[re.nx,re.ny,1])
-        qq=qq[wbox]
+        s=np.size(x[wbox])
+#        print("shape "+str(np.shape(wbox)))
+#        print("shape "+str(np.shape(x[wbox])))
+#        print(re.ph[wbox])
+        xx=np.reshape(x[wbox], s) ; yy=np.reshape(y[wbox], s)  # ; qq=np.reshape(qty[:,:,kphi],[re.nx,re.ny,1])[wbox]
+        qq=np.reshape(qty[wbox], s)
 #        print("shape "+str(np.shape(xx))+", "+str(np.shape(yy)))
 #        print("shape "+str(np.shape(qq)))
 #        print("to "+str(np.shape(xreg))+", "+str(np.shape(yreg)))
-        fint=si.SmoothBivariateSpline(xx,yy,qq,w=qq, kx=5, ky=5)
+        fint=si.SmoothBivariateSpline(xx,yy,qq, w=qq, kx=5, ky=5)
         #si.interp2d(yy, xx, qty)
         #        print(fint.ev(x1,y1))
         zint[:,:,kphi]=fint.__call__(xreg, yreg)
+        if(ifzinout):
+            fz.write("####################################\n")
+            for kk in np.arange(size(xx)):
+                fz.write(str(xx[kk])+" "+str(yy[kk])+" "+str(qq[kk])+"\n")
         # now we have a regularly-spaced 3Darray
-
+    if(ifzinout):
+        fz.close()
     #    np.fft.rfftn
     if(nphi>1):
         zint_sp=np.fft.rfftn(zint)
@@ -71,7 +84,7 @@ def powerstack(n1, n2, x1=10., x2=20., y1=-5., y2=5.):
     
     for k in np.arange(n2-n1)+n1:
         print("powerstack: reading "+re.dumpname(k))
-        kx, ky, kphi, zint_sp = snapshot(re.dumpname(k), x1=x1, x2=x2, y1=y1,y2=-y1)
+        kx, ky, kphi, zint_sp = snapshot(re.dumpname(k), x1=x1, x2=x2, y1=y1,y2=-y1, ifzinout=(k==0))
         if(k==n1):
             pds3d=np.abs(zint_sp)**2 ; dpds3d=np.abs(zint_sp)**4
             nkx=np.size(kx) ; nky=np.size(ky) ; nkphi=np.size(kphi)
@@ -88,3 +101,5 @@ def powerstack(n1, n2, x1=10., x2=20., y1=-5., y2=5.):
             for kkphi in np.arange(nkphi):
                 fpds.write(str(kx[kkx])+" "+str(ky[kky])+" "+str(kphi[kkphi])+" "+str(pds3d[kkx,kky,kkphi])+" "+str(dpds3d[kkx,kky,kkphi])+"\n")
     fpds.close()
+
+powerstack(50,60)
