@@ -171,7 +171,7 @@ void init_torus()
   cour = .8 ;
   dt = 1.e-6 ;
   R0 = 0.0 ;
-  Rin = 0.87*(1. + sqrt(1. - a*a)) ;  //.98
+  Rin = 0.8*(1. + sqrt(1. - a*a)) ;  //.98
   Rout = 1e5;
   rbr = 400.;
   npow2=4.0; //power exponent
@@ -195,7 +195,7 @@ void init_torus()
   set_arrays() ;
   set_grid() ;
 
-  get_phys_coord(5,0,0,&r,&th,&phi) ;
+  get_phys_coord(8,0,0,&r,&th,&phi) ;
   if(MASTER==mpi_rank) {
     fprintf(stderr,"r[5]: %g\n",r) ;
     fprintf(stderr,"r[5]/rhor: %g",r/(1. + sqrt(1. - a*a))) ;

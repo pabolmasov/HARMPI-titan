@@ -279,7 +279,7 @@ void fail(int fail_type)
         MPI_Finalize();
 #endif
 	/* for diagnostic purposes */
-	exit(0) ;
+	exit(1) ;
 }
 
 
