@@ -235,6 +235,11 @@ int restart_init()
   //first attempt to restart from rdump0
   dumpno = 0;
   restart_success = restart_read(dumpno) ;
+  if(restart_success>=3){
+    fprintf(stderr, "restart_read failed: rescale needed? \n");
+    restart_success = restart_rescale(dumpno) ;
+    if(restart_success) exit(1);
+  }
   MPI_Barrier(MPI_COMM_WORLD);
   if(restart_success) {
     if(i_am_the_master) {
@@ -632,6 +637,207 @@ int restart_read(int dumpno)
   fflush(stderr);
   fclose(fp);
 
+  return(1) ;
+}
+
+/* a clone of "restart_read" taking into account the possibly different sizes of the dimensions; it is assumed that all the dimensions are linearly scaled with N1,2,3 */
+
+int restart_rescale(int dumpno)
+{
+  int fscanf_and_bcast(FILE *fp, char *format, ...);
+
+  FILE *fp ;
+  int idum,i,j,k,m ;
+  char file_name[100];
+  size_t ntoread, nhaveread;
+  int test;
+  char s[MAXLEN];
+  size_t n;
+  long offset;
+  int is_write;
+  int file_exists, lineread;
+
+  int N1old, N2old, N3old, N1Gold, N2Gold, N3Gold, N1startold, N2startold, N3startold, N1Mold, N2Mold, N3Mold;
+  
+  sprintf(file_name,"dumps/rdump%d",dumpno) ;
+#if MPI && !DO_PARALLEL_WRITE
+    append_rank(file_name);
+#endif
+   fprintf(stderr, "rank %d, master = %d\n", mpi_rank, i_am_the_master);
+  /*************************************************************
+   Read the header of the restart file:
+   *************************************************************/
+  if(i_am_the_master || !DO_PARALLEL_WRITE) {
+    fp = fopen(file_name,"rb") ;
+    file_exists = (fp!=NULL);
+    fprintf(stderr, "reading %s\n",file_name);
+  }
+  else {
+    fp = NULL;
+  }
+#if MPI
+#if DO_PARALLEL_WRITE
+  MPI_Bcast(&file_exists,1,MPI_INT,MASTER,MPI_COMM_WORLD);
+#else
+  MPI_Allreduce(MPI_IN_PLACE,&file_exists,1,MPI_INT,MPI_MIN,MPI_COMM_WORLD);
+#endif
+#endif //MPI
+  
+  if(!file_exists) {
+    if(i_am_the_master)
+      fprintf(stderr,"Error opening %s file, does not exist?\n", file_name) ;
+    return(0) ;
+  }
+  /*************************************************************
+          READ the header of the restart file: 
+  *************************************************************/
+  if(DO_PARALLEL_WRITE)fprintf(stderr, "restart: DO_PARALLEL_WRITE ");
+  fscanf_and_bcast(fp, "%d", &idum  ); // N1 
+  N1old = idum ;
+  fscanf_and_bcast(fp, "%d", &idum  ); // N2
+  N2old = idum ;
+  fscanf_and_bcast(fp, "%d", &idum  ); // N3 
+  N3old = idum ;
+  fprintf(stderr, "Nold = [%d, %d, %d] \n", N1old, N2old, N3old);
+  // once more?
+  fscanf_and_bcast(fp, "%d", &idum  ); // N1 
+  N1old = idum ;
+  fscanf_and_bcast(fp, "%d", &idum  ); // N2
+  N2old = idum ;
+  fscanf_and_bcast(fp, "%d", &idum  ); // N3 
+  N3old = idum ;
+  fprintf(stderr, "Nold (mpi_ntot) = [%d, %d, %d]  \n", N1old, N2old, N3old);
+  // What are G?
+  fscanf_and_bcast(fp, "%d", &idum  ); // N1G 
+  N1Gold = idum ;
+  fscanf_and_bcast(fp, "%d", &idum  ); // N2G
+  N2Gold = idum ;
+  fscanf_and_bcast(fp, "%d", &idum  ); // N3G
+  N3Gold = idum ;
+  fprintf(stderr, "NGold = [%d, %d, %d]  \n", N1Gold, N2Gold, N3Gold);
+  // starting values
+  fscanf(fp, "%d", &idum  ); // N1srtart 
+  N1startold = idum ;
+  fscanf(fp, "%d", &idum  ); // N2start
+  N2startold = idum ;
+  fscanf(fp, "%d", &idum  ); // N3start
+  N3startold = idum ;
+  fprintf(stderr, "Nstartold = [%d, %d, %d]  \n", N1startold, N2startold, N3startold);
+  
+  // does not do anything for non-master threads  
+  // in total, there shd be 46 entries:
+  fscanf_and_bcast(fp, "%lf", &t        ); // 13
+  fscanf_and_bcast(fp, "%lf", &tf       );
+  fscanf_and_bcast(fp, "%d",  &nstep    );
+  fscanf_and_bcast(fp, "%lf", &a        ); // 16
+  fscanf_and_bcast(fp, "%lf", &gam      ); 
+  fscanf_and_bcast(fp, "%lf", &game     );
+  fscanf_and_bcast(fp, "%lf", &game4    );
+  fscanf_and_bcast(fp, "%lf", &game5    ); // 20
+  fscanf_and_bcast(fp, "%lf", &cour     );
+  fscanf_and_bcast(fp, "%lf", &DTd      );
+  fscanf_and_bcast(fp, "%lf", &DTl      );
+  fscanf_and_bcast(fp, "%lf", &DTi      );
+  fscanf_and_bcast(fp, "%lf", &DTr      ); // 25
+  fscanf_and_bcast(fp, "%d",  &DTr01    );
+  fscanf_and_bcast(fp, "%d",  &dump_cnt );
+  //  fprintf(stderr, "(rank %d) dumpcount %d\n", mpi_rank, dump_cnt);
+  fscanf_and_bcast(fp, "%d",  &image_cnt);
+  fscanf_and_bcast(fp, "%d",  &rdump_cnt);
+  fscanf_and_bcast(fp, "%d",  &rdump01_cnt); // 30
+  fscanf_and_bcast(fp, "%lf", &dt       );
+  fscanf_and_bcast(fp, "%d",  &lim      );
+  fscanf_and_bcast(fp, "%d",  &failed   );
+  //  fprintf(stderr, "(rank %d) if previous run failed = %d\n", mpi_rank, failed);
+  fscanf_and_bcast(fp, "%lf", &Rin      );
+  fscanf_and_bcast(fp, "%lf", &Rout     ); // 35
+  fscanf_and_bcast(fp, "%lf", &hslope   );
+  fscanf_and_bcast(fp, "%lf", &R0       );
+  fscanf_and_bcast(fp, "%lf", &fractheta);
+  fscanf_and_bcast(fp, "%lf", &fracphi  );
+  fscanf_and_bcast(fp, "%lf", &rbr      ); // 40
+  fscanf_and_bcast(fp, "%lf", &npow2    );
+  fscanf_and_bcast(fp, "%lf", &cpow2    );
+  // fscanf_and_bcast(fp, "%lf", &global_x10    );
+  //  fscanf_and_bcast(fp, "%lf", &global_x20    );
+  fscanf_and_bcast(fp, "%lf", &tdump    );  
+  fscanf_and_bcast(fp, "%lf", &trdump   );
+  fscanf_and_bcast(fp, "%lf", &timage   );// 45
+  fscanf_and_bcast(fp, "%lf", &tlog     ); // 
+  fgets(s, MAXLEN, fp);
+#if MPI && DO_PARALLEL_WRITE
+  if (i_am_the_master) {
+    //record the location of the first byte beyond the header
+    offset = ftell(fp);
+    fclose(fp) ;
+    fp = NULL;
+  }
+#endif
+   /*************************************************************
+   READ the body of the restart file:
+   *************************************************************/
+  double  (*pold)[N1Mold][N2Mold][N3Mold][NPR] ; // old variables, on a different grid
+  double  a_pold[N1Mold][N2Mold][N3Mold][NPR] ; // old variables, on a different grid
+#if MPI && DO_PARALLEL_WRITE 
+  {
+    MPI_Bcast(&offset,1,MPI_LONG,MASTER,MPI_COMM_WORLD);
+    is_write = 0; //read, not write
+    parallel_readwrite(file_name,rdump_buffer,RDUMP_FILE,is_write,offset);
+    n = 0L;
+    for(i=0;i<N1old;i++)for(j=0;j<N2old;j++)for(k=0;k<N3old;k++){
+	  PLOOP {
+	    pold[i][j][k][m]=rdump_buffer[n];
+	    n++;
+	  }             
+	}
+  }
+#else 
+  {
+    N1Mold=((N1old>1)?(N1old+2*N1Gold):(1));
+    N2Mold=((N2old>1)?(N2old+2*N2Gold):(1));
+    N3Mold=((N3old>1)?(N3old+2*N3Gold):(1));
+    ntoread = 1L*N1Mold*N2Mold*N3Mold*NPR;
+    fprintf(stderr, "ntoread = %ld \n", (long)ntoread);
+    nhaveread = fread( a_pold, sizeof(double), ntoread, fp );
+    fprintf(stderr, "nhaveread = %ld \n", (long)nhaveread);
+    
+    if( nhaveread != ntoread || feof(fp) ) {
+      fprintf(stderr, "MPI rank %d: Restart file ended prematurely: nhaveread = %ld, ntoread = %ld, wrong format or corrupted file?\n", mpi_rank, (long)nhaveread, (long)ntoread);
+      //      fprintf(stderr, "NPR = %ld  \n", NPR);
+      fprintf(stderr, "dimensions %ld x %ld x %ld \n", N1Mold, N2Mold, N3Mold);
+      fflush(stderr);
+#if MPI
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+#endif
+      exit(1);
+    }    
+    test = fgetc( fp );
+    
+    if( EOF != test || !feof(fp) ) {
+      fprintf(stderr, "MPI rank %d: Restart has more data than expected, wrong format or corrupted file?\n", mpi_rank);
+      fflush(stderr);
+#if MPI
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+#endif
+      exit(1);
+    }
+  }
+#endif
+  fflush(stderr);
+  fclose(fp);
+
+  int iold, jold, kold;
+  /*   nearest-point  "interpolation"              */
+  PLOOP{
+    ZLOOP{
+      iold=(int)rint((double)i*(double)N1old/(double)N1);
+      jold=(int)rint((double)j*(double)N2old/(double)N2);
+      kold=(int)rint((double)k*(double)N3old/(double)N3);
+      p[i][j][k][m]=a_pold[iold][jold][kold][m];
+    }
+  }
   return(1) ;
 }
 

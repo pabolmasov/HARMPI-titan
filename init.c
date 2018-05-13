@@ -202,7 +202,7 @@ void init_torus()
     fprintf(stderr,"r[5]/rhor: %g",r/rhor) ;
     if( r > rhor ) {
       fprintf(stderr, ": INSUFFICIENT RESOLUTION, ADD MORE CELLS INSIDE THE HORIZON\n" );
-
+      /* we need to change one of the grid parameters to assure R_5 < Rhor*/
       while (r > rhor) {
 	rbr*=0.95;
 	set_arrays() ;
@@ -214,7 +214,6 @@ void init_torus()
 	  exit(1);
 	}
       }
-      exit(0);
     }
     else {
       fprintf(stderr, "\n");
