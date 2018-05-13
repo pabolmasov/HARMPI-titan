@@ -141,11 +141,11 @@ void init_torus()
   double rho_av,umax,beta,bsq_ij,bsq_max,norm,q,beta_act ;
   double lfish_calc(double rmax) ;
 
-  int nloops=10; /* number of loops; nloops=0 reproduces the default behaviour  */
-  int evenloops=1;
+  int nloops=0; /* number of loops; nloops=0 reproduces the default behaviour  */
+  int evenloops=0;
   int kloop;
   double zloop, rloop, aplus;
-  
+  double rhor; 
   int iglob, jglob, kglob;
   double rancval;
   
@@ -170,12 +170,13 @@ void init_torus()
   failed = 0 ;	/* start slow */
   cour = .8 ;
   dt = 1.e-6 ;
-  R0 = 0.0 ;
-  Rin = 0.8*(1. + sqrt(1. - a*a)) ;  //.98
+  rhor=(1. + sqrt(1. - a*a)) ; // horizon
+  R0 = 0.6*rhor ;
+  Rin = 0.8*rhor ;  //.98
   Rout = 1e5;
-  rbr = 400.;
-  npow2=4.0; //power exponent
-  cpow2=1.0; //exponent prefactor (the larger it is, the more hyperexponentiation is)
+  rbr = 1000.;
+  npow2=1.; //power exponent
+  cpow2=1.; //exponent prefactor (the larger it is, the more hyperexponentiation is)
 
 
   t = 0. ;
@@ -195,12 +196,25 @@ void init_torus()
   set_arrays() ;
   set_grid() ;
 
-  get_phys_coord(8,0,0,&r,&th,&phi) ;
+  get_phys_coord(5,0,0,&r,&th,&phi) ;
   if(MASTER==mpi_rank) {
     fprintf(stderr,"r[5]: %g\n",r) ;
-    fprintf(stderr,"r[5]/rhor: %g",r/(1. + sqrt(1. - a*a))) ;
-    if( r > 1. + sqrt(1. - a*a) ) {
+    fprintf(stderr,"r[5]/rhor: %g",r/rhor) ;
+    if( r > rhor ) {
       fprintf(stderr, ": INSUFFICIENT RESOLUTION, ADD MORE CELLS INSIDE THE HORIZON\n" );
+
+      while (r > rhor) {
+	rbr*=0.95;
+	set_arrays() ;
+	set_grid() ;
+	get_phys_coord(5,0,0,&r,&th,&phi) ;
+	fprintf(stderr,"r[5]/rhor: %g",r/rhor) ;
+	if ( rbr< (rhor*10.)) {
+	  fprintf(stderr, "rbr : no solution found\n" );
+	  exit(1);
+	}
+      }
+      exit(0);
     }
     else {
       fprintf(stderr, "\n");
