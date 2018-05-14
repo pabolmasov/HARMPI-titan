@@ -86,7 +86,7 @@ int main(int argc,char *argv[])
 	/* Perform Initializations, either directly or via checkpoint */
 	if(MASTER==mpi_rank) system("mkdir -p dumps images");
         is_restarted = restart_init();
-	if(!is_restarted) {
+	if(is_restarted == 0) {
           init() ;
 #if( DOKTOT )
         init_entropy();
@@ -99,8 +99,13 @@ int main(int argc,char *argv[])
 
     //memory allocation for dump and gdump write buffers
     initialize_parallel_write(1);
-  
-    if (!is_restarted) {
+    
+    if (is_restarted != 1 ) {
+	// create dump backups when rescaling
+	if(is_restarted > 1){
+	  system("cp dumps/gdump dumps/gdump.back");
+	  system("for a in dumps/gdump*; do cp $a $a.back ; done");
+	}
         /* do initial diagnostics */
         diag(INIT_OUT) ;
     }

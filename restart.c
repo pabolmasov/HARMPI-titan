@@ -224,6 +224,7 @@ int restart_init()
   int i,j,k,m ;
   int dumpno;
   int restart_success;
+  int restart_status=0 ; // 0 for no restart, 1 for equal-dimensions restart, 2 for rescaling
 
   /* set up global arrays */
   set_arrays() ;
@@ -238,7 +239,11 @@ int restart_init()
   if(restart_success>=3){
     fprintf(stderr, "restart_read failed: rescale needed? \n");
     restart_success = restart_rescale(dumpno) ;
+    restart_status=2;
     if(restart_success) exit(1);
+  }
+  else{
+    restart_status=1;
   }
   MPI_Barrier(MPI_COMM_WORLD);
   if(restart_success) {
@@ -304,7 +309,7 @@ int restart_init()
       fprintf(stderr, "restart_init: dumpn %d\n", dump_cnt);
     }
   /* done! */
-  return(1) ;
+  return(1+restart_status) ;
 
 }
 
@@ -373,7 +378,7 @@ int restart_read(int dumpno)
               idum, (int)N1) ;
       fflush(stderr);
     }
-    exit(3) ;
+    return(3) ;
   }
   else if(DO_PARALLEL_WRITE && idum != mpi_ntot[1]) {
     if(i_am_the_master) {
@@ -381,7 +386,8 @@ int restart_read(int dumpno)
               idum, mpi_ntot[1]) ;
       fflush(stderr);
     }
-    exit(3) ;
+    fp = NULL;
+    return(3) ;
   }
   fscanf_and_bcast(fp, "%d", &idum  );
   if(!DO_PARALLEL_WRITE && idum != N2) {
@@ -389,7 +395,7 @@ int restart_read(int dumpno)
       fprintf(stderr,"error reading restart file; N2 differs\n") ;
       fflush(stderr);
     }
-    exit(4) ;
+    return(4) ;
   }
   else if(DO_PARALLEL_WRITE && idum != mpi_ntot[2]) {
     if(i_am_the_master) {
@@ -397,7 +403,8 @@ int restart_read(int dumpno)
               idum, mpi_ntot[2]) ;
       fflush(stderr);
     }
-    exit(4) ;
+
+    return(4) ;
   }
 
   fscanf_and_bcast(fp, "%d", &idum  );
@@ -406,7 +413,8 @@ int restart_read(int dumpno)
       fprintf(stderr,"error reading restart file; N3 differs\n") ;
       fflush(stderr);
     }
-    exit(4) ;
+    
+    return(4) ;
   }
   else if(DO_PARALLEL_WRITE && idum != mpi_ntot[3]) {
     if(i_am_the_master) {
@@ -414,7 +422,7 @@ int restart_read(int dumpno)
               idum, mpi_ntot[3]) ;
       fflush(stderr);
     }
-    exit(4) ;
+    return(4) ;
   }
 
   fscanf_and_bcast(fp, "%d", &idum  );
@@ -424,7 +432,7 @@ int restart_read(int dumpno)
               idum, mpi_ntot[1]) ;
       fflush(stderr);
     }
-    exit(3) ;
+    return(3) ;
   }
   fscanf_and_bcast(fp, "%d", &idum  );
   if(idum != mpi_ntot[2]) {
@@ -432,7 +440,7 @@ int restart_read(int dumpno)
       fprintf(stderr,"error reading restart file; ntot2 differs\n") ;
       fflush(stderr);
     }
-    exit(4) ;
+    return(4) ;
   }
   
   fscanf_and_bcast(fp, "%d", &idum  );
@@ -441,7 +449,7 @@ int restart_read(int dumpno)
       fprintf(stderr,"error reading restart file; ntot3 differs\n") ;
       fflush(stderr);
     }
-    exit(4) ;
+    return(4) ;
   }
   fscanf_and_bcast(fp, "%d", &idum  );
   if(!DO_PARALLEL_WRITE && idum != N1G) {
@@ -449,7 +457,7 @@ int restart_read(int dumpno)
       fprintf(stderr,"error reading restart file; N1G differs\n") ;
       fflush(stderr);
     }
-    exit(3) ;
+    return(3) ;
   }
   else if(DO_PARALLEL_WRITE && idum != 0) {
     if(i_am_the_master) {
@@ -457,7 +465,7 @@ int restart_read(int dumpno)
               idum, (int)0) ;
       fflush(stderr);
     }
-    exit(4) ;
+    return(4) ;
   }
   fscanf_and_bcast(fp, "%d", &idum  );
   if(!DO_PARALLEL_WRITE && idum != N2G) {
@@ -465,7 +473,7 @@ int restart_read(int dumpno)
       fprintf(stderr,"error reading restart file; N2G differs\n") ;
       fflush(stderr);
     }
-    exit(4) ;
+    return(4) ;
   }
   else if(DO_PARALLEL_WRITE && idum != 0) {
     if(i_am_the_master) {
@@ -473,7 +481,7 @@ int restart_read(int dumpno)
               idum, (int)0) ;
       fflush(stderr);
     }
-    exit(4) ;
+    return(4) ;
   }
   
   fscanf_and_bcast(fp, "%d", &idum  );
@@ -482,7 +490,7 @@ int restart_read(int dumpno)
       fprintf(stderr,"error reading restart file; N3G differs\n") ;
       fflush(stderr);
     }
-    exit(4) ;
+    return(4) ;
   }
   else if(DO_PARALLEL_WRITE && idum != 0) {
     if(i_am_the_master) {
@@ -490,7 +498,7 @@ int restart_read(int dumpno)
               idum, (int)0) ;
       fflush(stderr);
     }
-    exit(4) ;
+    return(4) ;
   }
 
   fscanf(fp, "%d", &idum  );
@@ -499,7 +507,7 @@ int restart_read(int dumpno)
     fprintf(stderr, "file %s\n", file_name);
     fprintf(stderr,"(rank %d) error reading restart file ; mpi_startn[1] differs, %d /= %d\n", mpi_rank, idum, mpi_startn[1]) ;
     fflush(stderr);
-    exit(3) ;
+    return(3) ;
   }
 
   fscanf(fp, "%d", &idum  );
@@ -509,7 +517,7 @@ int restart_read(int dumpno)
     fprintf(stderr, "file %s\n", file_name);
     fprintf(stderr,"(rank %d) error reading restart file; mpi_startn[2] differs, %d /= %d\n", mpi_rank, idum, mpi_startn[2]) ;
     fflush(stderr);
-    exit(4) ;
+    return(4) ;
   }
   
   fscanf(fp, "%d", &idum  );
@@ -518,7 +526,7 @@ int restart_read(int dumpno)
     fprintf(stderr, "file %s\n", file_name);
     fprintf(stderr,"(rank %d) error reading restart file; mpi_startn[3] differs,  %d /= %d\n", mpi_rank, idum, mpi_startn[3]) ;
     fflush(stderr);
-    exit(4) ;
+    return(4) ;
   }
 
   // does not do anything for non-master threads  
@@ -661,9 +669,9 @@ int restart_rescale(int dumpno)
   
   sprintf(file_name,"dumps/rdump%d",dumpno) ;
 #if MPI && !DO_PARALLEL_WRITE
-    append_rank(file_name);
+  append_rank(file_name);
 #endif
-   fprintf(stderr, "rank %d, master = %d\n", mpi_rank, i_am_the_master);
+  fprintf(stderr, "rank %d, master = %d\n", mpi_rank, i_am_the_master);
   /*************************************************************
    Read the header of the restart file:
    *************************************************************/
@@ -764,6 +772,7 @@ int restart_rescale(int dumpno)
   fscanf_and_bcast(fp, "%lf", &trdump   );
   fscanf_and_bcast(fp, "%lf", &timage   );// 45
   fscanf_and_bcast(fp, "%lf", &tlog     ); // 
+  fprintf(stderr, "46 entries read: t= %lg; rbr = %lg; tlog = %lg\n", t, rbr, tlog);
   fgets(s, MAXLEN, fp);
 #if MPI && DO_PARALLEL_WRITE
   if (i_am_the_master) {
@@ -776,8 +785,11 @@ int restart_rescale(int dumpno)
    /*************************************************************
    READ the body of the restart file:
    *************************************************************/
-  double  (*pold)[N1Mold][N2Mold][N3Mold][NPR] ; // old variables, on a different grid
-  double  a_pold[N1Mold][N2Mold][N3Mold][NPR] ; // old variables, on a different grid
+  N1Mold=((N1old>1)?(N1old+2*NG):(1));
+  N2Mold=((N2old>1)?(N2old+2*NG):(1));
+  N3Mold=((N3old>1)?(N3old+2*NG):(1));
+  double  (*pold)[N2Mold][N3Mold][NPR] ; // old variables, on a different grid
+  double a_pold[N1Mold][N2Mold][N3Mold][NPR] ; // old variables, on a different grid
 #if MPI && DO_PARALLEL_WRITE 
   {
     MPI_Bcast(&offset,1,MPI_LONG,MASTER,MPI_COMM_WORLD);
@@ -793,12 +805,10 @@ int restart_rescale(int dumpno)
   }
 #else 
   {
-    N1Mold=((N1old>1)?(N1old+2*N1Gold):(1));
-    N2Mold=((N2old>1)?(N2old+2*N2Gold):(1));
-    N3Mold=((N3old>1)?(N3old+2*N3Gold):(1));
     ntoread = 1L*N1Mold*N2Mold*N3Mold*NPR;
-    fprintf(stderr, "ntoread = %ld \n", (long)ntoread);
+    fprintf(stderr, "ntoread = %ld = %ld X %ld X %ld X %ld\n", (long)ntoread, (long)N1Mold, (long)N2Mold, (long)N3Mold, (long)NPR);
     nhaveread = fread( a_pold, sizeof(double), ntoread, fp );
+    fprintf(stderr, "ntoread = %ld \n", (long)ntoread);
     fprintf(stderr, "nhaveread = %ld \n", (long)nhaveread);
     
     if( nhaveread != ntoread || feof(fp) ) {
@@ -827,7 +837,7 @@ int restart_rescale(int dumpno)
 #endif
   fflush(stderr);
   fclose(fp);
-
+  fprintf(stderr, "read successfully!\n");
   int iold, jold, kold;
   /*   nearest-point  "interpolation"              */
   PLOOP{
@@ -838,7 +848,9 @@ int restart_rescale(int dumpno)
       p[i][j][k][m]=a_pold[iold][jold][kold][m];
     }
   }
-  return(1) ;
+  fprintf(stderr, "interpolation finished\n");
+  
+  return(0) ;
 }
 
 //Reads the in the values from the string and

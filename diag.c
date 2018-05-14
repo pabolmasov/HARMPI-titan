@@ -212,7 +212,8 @@ int call_code ;
 #endif
   
   /* gdump only at code start */
-  if(call_code == INIT_OUT) {
+  if(call_code == INIT_OUT ||
+     ) {
     /* make grid dump file */
     
     gdump(0) ;
