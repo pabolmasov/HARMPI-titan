@@ -842,9 +842,9 @@ int restart_rescale(int dumpno)
   /*   nearest-point  "interpolation"              */
   PLOOP{
     ZLOOP{
-      iold=(int)rint((double)i*(double)N1old/(double)N1);
-      jold=(int)rint((double)j*(double)N2old/(double)N2);
-      kold=(int)rint((double)k*(double)N3old/(double)N3);
+      iold=(int)rint((double)(i-N1G)*(double)N1old/(double)N1)+N1Gold;
+      jold=(int)rint((double)(j-N2G)*(double)N2old/(double)N2)+N2Gold;
+      kold=(int)rint((double)(k-N3G)*(double)N3old/(double)N3)+N3Gold;
       p[i][j][k][m]=a_pold[iold][jold][kold][m];
     }
   }

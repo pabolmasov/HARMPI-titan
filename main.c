@@ -104,7 +104,16 @@ int main(int argc,char *argv[])
 	// create dump backups when rescaling
 	if(is_restarted > 1){
 	  system("cp dumps/gdump dumps/gdump.back");
-	  system("for a in dumps/gdump*; do cp $a $a.back ; done");
+	  system("cp dumps/gdump2 dumps/gdump2.back");
+	  char suff[100]; 
+	  sprintf(suff, "cp dumps/gdump_%04d dumps/gdump.back_%04d", mpi_rank, mpi_rank);
+	  system(suff);
+	  fprintf(stderr, suff);
+	  fprintf(stderr, "\n");
+	  sprintf(suff, "cp dumps/gdump2_%04d dumps/gdump2.back_%04d", mpi_rank, mpi_rank);
+	  system(suff);
+	  fprintf(stderr, suff);
+	  fprintf(stderr, "\n");
 	}
         /* do initial diagnostics */
         diag(INIT_OUT) ;
@@ -115,7 +124,7 @@ int main(int argc,char *argv[])
 
     defcon = 1.;
     fprintf(stderr, "dumping??DTd = %lf, tdump = %lf \n", DTd, tdump);
-	while(t < tf) {
+    while(t < tf) {
         
         /* step variables forward in time */
         nstroke = 0 ;
