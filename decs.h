@@ -112,9 +112,9 @@
 #define PERIODIC (0)          /* whether or not to use periodic boundary conditions */
 #define OUTFLOW  (0)          /* whether or not to use outflow boundary conditions in all directions */
 #elif WHICHPROBLEM == TORUS_PROBLEM
-#define N1       (128)         /* number of physical zones in X1-direction */  //change back to 256x256
-#define N2       (128)         /* number of physical zones in X2-direction */
-#define N3       (1)          /* number of physical zones in X3-direction */
+#define N1       (8)         /* number of physical zones in X1-direction */  //change back to 256x256
+#define N2       (64)         /* number of physical zones in X2-direction */
+#define N3       (64)          /* number of physical zones in X3-direction */
 #define GR       (1)          /* whether or not to use GR */
 #define BL       (1)          /* whether or not to use BL coords */
 #define INFLOW   (0)          /* whether or not to allow inflow at boundaries */

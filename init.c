@@ -171,11 +171,11 @@ void init_torus()
   cour = .8 ;
   dt = 1.e-6 ;
   rhor=(1. + sqrt(1. - a*a)) ; // horizon
-  R0 = 0.6*rhor ;
+  R0 = 0.0*rhor ;
   Rin = 0.8*rhor ;  //.98
   Rout = 1e5;
-  rbr = 1000.;
-  npow2=1.; //power exponent
+  rbr = 400.;
+  npow2=4.; //power exponent
   cpow2=1.; //exponent prefactor (the larger it is, the more hyperexponentiation is)
 
 
@@ -221,13 +221,13 @@ void init_torus()
   }
 
   /* output choices */
-  tf = 10000.0 ;
+  tf = 50000.0 ;
 
   DTd = 10.; /* dumping frequency, in units of M */
   DTl = 10. ;	/* logfile frequency, in units of M */
-  DTi = 10. ; 	/* image file frequ., in units of M */
+  DTi = 1000. ; 	/* image file frequ., in units of M */
   DTr = 10. ; /* restart file frequ., in units of M */
-  DTr01 = 10000. ; /* restart file frequ., in timesteps */
+  DTr01 = 1000. ; /* restart file frequ., in timesteps */
 
   /* start diagnostic counters */
   dump_cnt = 0 ;

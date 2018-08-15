@@ -288,7 +288,7 @@ int restart_init()
   //  lim = MC ;
   //  cour = 0.8 ;
   //lim = VANL ;
-  //tf = 4000. ;
+  //  tf = 40000. ;
   //   DTr01=1;
   //  tdump=t+0.1;
 
@@ -297,6 +297,8 @@ int restart_init()
   //  nstep+=5;
   //  dt=0.01;
   //  dump_cnt=9 ;
+  tf += t; // we are most likely starting from t\times tf
+  fprintf(stderr, "time = %lf, \n final time changed to %lf\n", t, tf);
 
   if(i_am_the_master) 
     {
