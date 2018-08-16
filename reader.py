@@ -108,7 +108,7 @@ def read_file(dump,type=None,savedump=True,saverdump=False,noround=False):
         if savedump:
             #if the full dump file does not exist, create it
             dumpfullname = "dumps/" + dump
-            if (type == "dump" or type == "gdump") and not os.path.isfile(dumpfullname):
+            if (type == "dump") and not os.path.isfile(dumpfullname):
                 sys.stdout.write("Saving full dump to %s..." % dumpfullname)
                 sys.stdout.flush()
                 header[1] = header[4] #N1 = nx

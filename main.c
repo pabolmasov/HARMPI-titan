@@ -86,7 +86,7 @@ int main(int argc,char *argv[])
 	/* Perform Initializations, either directly or via checkpoint */
 	if(MASTER==mpi_rank) system("mkdir -p dumps images");
         is_restarted = restart_init();
-	if(!is_restarted) {
+	if(is_restarted == 0) {
           init() ;
 #if( DOKTOT )
         init_entropy();
@@ -99,8 +99,22 @@ int main(int argc,char *argv[])
 
     //memory allocation for dump and gdump write buffers
     initialize_parallel_write(1);
-  
-    if (!is_restarted) {
+    
+    if (is_restarted != 1 ) {
+	// create dump backups when rescaling
+	if(is_restarted > 1){
+	  system("cp dumps/gdump dumps/gdump.back");
+	  system("cp dumps/gdump2 dumps/gdump2.back");
+	  char suff[100]; 
+	  sprintf(suff, "cp dumps/gdump_%04d dumps/gdump.back_%04d", mpi_rank, mpi_rank);
+	  system(suff);
+	  fprintf(stderr, suff);
+	  fprintf(stderr, "\n");
+	  sprintf(suff, "cp dumps/gdump2_%04d dumps/gdump2.back_%04d", mpi_rank, mpi_rank);
+	  system(suff);
+	  fprintf(stderr, suff);
+	  fprintf(stderr, "\n");
+	}
         /* do initial diagnostics */
         diag(INIT_OUT) ;
     }
@@ -110,7 +124,7 @@ int main(int argc,char *argv[])
 
     defcon = 1.;
     fprintf(stderr, "dumping??DTd = %lf, tdump = %lf \n", DTd, tdump);
-	while(t < tf) {
+    while(t < tf) {
         
         /* step variables forward in time */
         nstroke = 0 ;

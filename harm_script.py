@@ -641,5 +641,28 @@ def origin_plot(dumpn, xmax=30.):
 def origins(n1, n2):   
     for k in np.arange(n2-n1)+n1:
         origin_plot(k, xmax=20.)
- 
+
+def tworho(n1, n2):
+    file1=re.dumpname(n1) ; file2=re.dumpname(n2)
+    re.rg("gdump.back") ; re.rd(file1)
+    r1=re.r ; h1=re.h ; ph1=re.ph ; rho1=re.rho
+    re.rg("gdump") ; re.rd(file2)
+    r2=re.r ; h2=re.h ; ph2=re.ph ; rho2=re.rho
+
+    print("dimensions: "+str(np.shape(rho1))+", "+str(np.shape(rho2)))
+    
+    x1=np.squeeze((r1*sin(h1))[:,:,0]) ; y1=np.squeeze((r1*cos(h1))[:,:,0])
+    x2=np.squeeze((r2*sin(h2))[:,:,0]) ; y2=np.squeeze((r2*cos(h2))[:,:,0])
+
+    levs=np.linspace(0.,rho1.max(), 10)
+    xmax=50.
+    plt.clf()
+    plt.contourf(x2, y2, np.squeeze(rho2[:,:,0]), levels=levs)
+    plt.contour(x2, y2, np.squeeze(rho2[:,:,0]), levels=levs, colors='k')
+    plt.contour(x1, y1, np.squeeze(rho1[:,:,0]), levels=levs, colors='w')
+    plt.xlim(0., xmax) ; plt.ylim(-xmax/4., xmax/2.)
+    plt.savefig("rhotest.png")
+    plt.close()
+    
 # ffmpeg -f image2 -r 15 -pattern_type glob -i 'dumps/dump*.png' -pix_fmt yuv420p -b 4096k orimovie.mp4
+

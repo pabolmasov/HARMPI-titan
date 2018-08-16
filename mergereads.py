@@ -1102,7 +1102,7 @@ def readsp():
     plt.errorbar(khun, pdsh, yerr=dpdsh, color='g', fmt='.')
     if(nphi>1):
         plt.plot(kpun, pdsphi, '.r')
-        plt.errorbar(kpun, pdsphi, yerr=dpdsphi, color='r')
+        plt.errorbar(kpun, pdsphi, yerr=dpdsphi, color='r', fmt='.')
     plt.xscale('log')
     plt.yscale('log')
     plt.savefig('pdss.png')
