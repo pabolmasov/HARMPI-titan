@@ -46,7 +46,7 @@
 USEICC = 1
 USEOMP = 0  #please do not use this option (yet), as this has not been recently tested
 USEMPI = 1
-MACHINE =suselaptop
+MACHINE =titan
 
 # Add your other choices here:
 ifeq ($(MACHINE),suselaptop)
