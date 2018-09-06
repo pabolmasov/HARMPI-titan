@@ -28,6 +28,7 @@ import time
 
 import harm_script as h
 import reader as rk
+import ascreader as ar
 
 # last stable orbit
 def arms(a):
@@ -48,23 +49,7 @@ def bhole(rhor):
     art.set_zorder(20)
     draw()
 
-def dinforead(prefix):
-
-    # mesh data:
-    dfile=prefix+'_dinfo.dat'
-    fd=open(dfile, 'r')
-    s=str.split(str.strip(fd.readline()))
-    nr=int(s[0]) ; nh=int(s[1]) ; nphi=int(s[2])
-    s=str.split(str.strip(fd.readline()))
-    a=double(s[0])
-    s=str.split(str.strip(fd.readline()))
-    if(s):
-        t=double(s[0])
-    else:
-        t=0.
-    print("Kerr a = "+str(a))
-    fd.close()
-    return nr, nh, nphi, a, t
+##############################################
 
 def tedplotter(dire):
     nr, nh, nphi, a, t=dinforead(dire+'/merge')
@@ -189,61 +174,13 @@ def tedplotter(dire):
 # reading all the averaged maps of the variables
 def velread(prefix='merge_', nope=False, ifaphi=True):
     # prefix = 'titan2/merge_'
-    rfile=prefix+'_r.dat'
-    fr=open(rfile, 'r')
-    s=str.split(str.strip(fr.readline()))
-    r=[]
-    while(s):
-        r.append(s[0])
-        s=str.split(str.strip(fr.readline()))
-    fr.close()
-    r=asarray(r, dtype=double)
-    hfile=prefix+'_h.dat'
-    fh=open(hfile, 'r')
-    s=str.split(str.strip(fh.readline()))
-    h=[]
-    while(s):
-        h.append(s[0])
-        s=str.split(str.strip(fh.readline()))
-    fh.close()
-    h=asarray(h, dtype=double)
-    h2,r2=meshgrid(h,r)
-    nr,nh=shape(h2)
-
-    # density:
-    rhofile=prefix+'_rho.dat'
-    frho=open(rhofile, 'r')
-    s=str.split(str.strip(frho.readline()))
-    rho=[]
-    while(s):
-        rho.append(s[0])
-        s=str.split(str.strip(frho.readline()))
-    frho.close()
-    rho=asarray(rho, dtype=double)
-    rho=reshape(rho, [nr, nh])
-
-    # pressure:
-    pfile=prefix+'_p.dat'
-    fp=open(pfile, 'r')
-    s=str.split(str.strip(fp.readline()))
-    p=[]
-    while(s):
-        p.append(s[0])
-        s=str.split(str.strip(fp.readline()))
-    fp.close()
-    p=asarray(p, dtype=double)
-    p=reshape(p, [nr, nh])
-    # magnetic pressure:
-    pfile=prefix+'_mp.dat'
-    fmp=open(pfile, 'r')
-    s=str.split(str.strip(fmp.readline()))
-    mp=[]
-    while(s):
-        mp.append(s[0])
-        s=str.split(str.strip(fmp.readline()))
-    fmp.close()
-    mp=asarray(mp, dtype=double)
-    mp=reshape(mp, [nr, nh])
+    r2,h2=ar.readascmeshes(prefix)
+    nr,nh=shape(r2)
+    
+    # density, pressure, magnetic pressure:
+    rho = ar.readascone(prefix+'_rho.dat', [nr,nh])
+    p = ar.readascone(prefix+'_p.dat', [nr,nh])
+    mp = ar.readascone(prefix+'_mp.dat', [nr,nh])
     
     # velocities:
     uufile=prefix+'_uu.dat'
@@ -717,11 +654,57 @@ def mplotter(dire,nope=False):
         ylabel(r'$\Delta_{ik} / \Delta_{\rm tot}$')
         savefig(dire+'/dmatrix_thslice.eps')
 
+# remaps radii and estimates the mean velocities using two frames
+def diffplot(prefix1='dumps/dump000',prefix2='dumps/dump100'):
+     rhofile1=prefix1+'_rho.dat'
+     orifile1=prefix1+'_ori.dat'
+     rhofile2=prefix2+'_rho.dat'
+     orifile2=prefix2+'_ori.dat'
+    
+     nr, nh, nphi, a, t=ar.dinforead(prefix1)
+
+     r1,h1 = ar.readascmeshes(prefix1)
+     r2,h2 = ar.readascmeshes(prefix2)
+     nr, nh = shape(r1)
+     rho1 = ar.readascone(rhofile1, [nr,nh])
+     rho2 = ar.readascone(rhofile2, [nr,nh])
+     orr1, orth1, orphi1 = ar.readasc_ori(orifile1, [nr,nh])
+     orr2, orth2, orphi2 = ar.readasc_ori(orifile2, [nr,nh])
+     rhor=1.+sqrt(1.-a**2)
+     
+     wdense=(rho1 > 0.05 * median(rho1)) & (rho2 > 0.05 * median(rho2))
+     wdense_eq=wdense * (cos(h1) < 0.025)
+     clf()
+     plot(orr1[wdense], r1[wdense], '.k')
+     plot(orr2[wdense], r2[wdense], '.r')
+     plot(orr1[wdense_eq], r1[wdense_eq], 'ok')
+     plot(orr2[wdense_eq], r2[wdense_eq], 'or')
+     plot(r2*0.+rhor, r2, 'k')
+     plot(r2, r2*0.+rhor, 'k')
+     plot(r1,r1, 'g')
+     ylim(rhor, rhor*10.)
+     xlim(rhor, rhor*10.)
+     #     xscale('log') ; yscale('log')
+     xlabel('initial $R$') ;    ylabel('current $R$')
+     tight_layout()
+     savefig('twoori.png')
+     close()
+     clf()
+     plot(orr1[wdense_eq], orr2[wdense_eq], '.k')
+     plot(r2*0.+rhor, r2, 'k')
+     plot(r2, r2*0.+rhor, 'k')
+     plot(r1,r1, 'g')
+     ylim(rhor, rhor*10.)
+     xlim(rhor, rhor*10.)
+     #     xscale('log') ; yscale('log')
+     xlabel('initial $R$') ;    ylabel('current $R$')
+     tight_layout()
+     savefig('orishift.png')
+     close()
+    
 # reading R\Theta file in ascii ; plotting the results of framerip
 def ascframe(prefix='dumps/dump000', xmax=20.):
 
-    rfile=prefix+'_r.dat'
-    hfile=prefix+'_h.dat'
     rhofile=prefix+'_rho.dat'
     pfile=prefix+'_p.dat'
     pmfile=prefix+'_pm.dat'
@@ -730,84 +713,19 @@ def ascframe(prefix='dumps/dump000', xmax=20.):
     bfile=prefix+'_b.dat'
     orifile=prefix+'_ori.dat'
 
-    nr, nh, nphi, a, t=dinforead(prefix)
+    nr, nh, nphi, a, t=ar.dinforead(prefix)
+    r2, h2 = ar.readascmeshes(prefix)
 
-    # radial mesh:
-    fr=open(rfile, 'r')
-    s=str.split(str.strip(fr.readline()))
-    r=[]
-    while(s):
-        r.append(s[0])
-        s=str.split(str.strip(fr.readline()))
-    fr.close()
-    r=asarray(r, dtype=double)
-    nr=size(r)
-    # polar angle mesh:
-    fh=open(hfile, 'r')
-    s=str.split(str.strip(fh.readline()))
-    th=[]
-    while(s):
-        th.append(s[0])
-        s=str.split(str.strip(fh.readline()))
-    fh.close()
-    th=asarray(th, dtype=double)
-    nh=size(th)
-
-    # 2d-grid (order??)
-    h2,r2=meshgrid(th,r)
-    print(shape(r2))
-    print(nr, nh)
-
-    # density:
-    frho=open(rhofile, 'r')
-    s=str.split(str.strip(frho.readline()))
-    rho=[]
-    while(s):
-        rho.append(s[0])
-        s=str.split(str.strip(frho.readline()))
-    frho.close()
-    rho=asarray(rho, dtype=double)
-    rho=reshape(rho, [nr, nh])
-
-    # pressure:
-    fp=open(pfile, 'r')  ;  fpm=open(pmfile, 'r')
-    s=str.split(str.strip(fp.readline()))
-    sm=str.split(str.strip(fpm.readline()))
-    p=[] ; pm=[]
-    while(s):
-        p.append(s[0]) ;    pm.append(sm[0])
-        s=str.split(str.strip(fp.readline()))
-        sm=str.split(str.strip(fpm.readline()))
-    fp.close() ;   fpm.close()
-    p=asarray(p, dtype=double)  ;  pm=asarray(pm, dtype=double)
-    p=reshape(p, [nr, nh])   ;  pm=reshape(pm, [nr, nh]) 
+    # density and pressure:
+    rho = ar.readascone(rhofile, [nr,nh])
+    p = ar.readascone(pfile, [nr,nh])
 
     # velocity field:
-    fuu=open(uufile, 'r')
-    s=str.split(str.strip(fuu.readline()))
-    ur=[] ; uh=[] ; omega=[]
-    while(s):
-        ur.append(s[1])
-        uh.append(s[2])
-        omega.append(old_div(double(s[3]),double(s[0])))
-        s=str.split(str.strip(fuu.readline()))
-    fuu.close()
-    ur=asarray(ur, dtype=double) ;   uh=asarray(uh, dtype=double)
-    ur=reshape(ur, [nr, nh]) ; uh=reshape(uh, [nr, nh])
-    omega=asarray(omega, dtype=double)
-    omega=reshape(omega, [nr, nh])
+    ur, uh, omega = ar.readasc_uu(uufile, [nr,nh])
 
     # origin variables:
-    fori=open(orifile, 'r')
-    s=str.split(str.strip(fori.readline()))
-    orr=[] ; orth=[] ; orphi=[]
-    while(s):
-        orr.append(s[0]) ;  orth.append(s[1]) ;  orphi.append(s[2])
-        s=str.split(str.strip(fori.readline()))
-    fori.close()
-    orr=reshape(asarray(orr, dtype=double), [nr, nh]) 
-    orth=reshape(asarray(orth, dtype=double), [nr, nh]) 
-    orphi=reshape(asarray(orphi, dtype=double), [nr, nh]) 
+    orr, orth, orphi = ar.readasc_ori(orifile, [nr,nh])
+    
     # magnetic field (the last component is A_\phi)
     fb=open(bfile, 'r')
     s=str.split(str.strip(fb.readline()))
@@ -1051,16 +969,17 @@ def eqframe(prefix):
     #    axis('equal')
     savefig(prefix+'_eq_beta.eps')
     savefig(prefix+'_eq_beta.png')
-    
+    close()
 
 def dumpmovie():
-    dire='dumps/'
-    n1=0
-    n2=340
+    dire='titania/dumps/'
+    n1=985
+    n2=1545
+    plt.ioff()
     for k in n1+arange(n2-n1+1):
         prefix=dire+rk.dumpname(k)
         print(prefix)
-#        eqframe(prefix)
+        eqframe(prefix)
         ascframe(prefix)
         
     # then: ffmpeg -framerate 15 -pattern_type glob -i 'titan2/dump???_rho.png' -b 4096k titanic2.mp4
