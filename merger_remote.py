@@ -34,6 +34,7 @@ def get_sorted_file_list(prefix="dump"):
 
 def faraday():
     #    global re.omegaf1, re.omegaf2
+    # Ferraro frequencies
     if 're.omegaf1' in globals():
         del re.omegaf1
     if 're.omemaf2' in globals():
@@ -43,6 +44,9 @@ def faraday():
     return omegaf1, omegaf2
 
 def Tcalcud():
+    '''
+    calculates the components of stress-energy tensor
+    '''
     global Tud, TudEM, TudMA
     global mu, sigma
     global enth
@@ -55,14 +59,16 @@ def Tcalcud():
     TudEM = np.zeros((4,4,re.nx,re.ny,re.nz),dtype=np.float32,order='F')
     for kapa in np.arange(4):
         for nu in np.arange(4):
-            if(kapa==nu): delta = 1
-            else: delta = 0
+            if(kapa==nu):
+                delta = 1
+            else:
+                delta = 0
             TudEM[kapa,nu] = re.bsq*re.uu[kapa]*re.ud[nu] + 0.5*re.bsq*delta - re.bu[kapa]*re.bd[nu]
             TudMA[kapa,nu] = w*re.uu[kapa]*re.ud[nu]+pg*delta
             #Tud[kapa,nu] = eta*uu[kapa]*ud[nu]+(pg+0.5*bsq)*delta-bu[kapa]*bd[nu]
-            re.Tud[kapa,nu] = re.TudEM[kapa,nu] + re.TudMA[kapa,nu]
+            Tud[kapa,nu] = TudEM[kapa,nu] + TudMA[kapa,nu]
     mu = old_div(-Tud[1,0],(re.rho*re.uu[1]))
-    sigma = old_div(re.TudEM[1,0],re.TudMA[1,0])
+    sigma = old_div(TudEM[1,0],TudMA[1,0])
     enth=1+re.ug*re.gam/re.rho
     unb=enth*re.ud[0]
     isunbound=(-unb>1.0)
@@ -106,7 +112,7 @@ def dumpinfo(prefix):
     print("time "+str(re.t))
     fout.close()
 
-# calculated and writes out evolution of some global parameters; rref is the radius at which the mass and momentum flows are calculated
+# calculates and writes out evolution of some global parameters; rref is the radius at which the mass and momentum flows are calculated
 def glevol(nmax, rref):
 #    global rho, uu
     re.rg("gdump")
@@ -146,6 +152,9 @@ def glevol(nmax, rref):
 
 
 def mint(rref):
+    '''
+    integrates mass and angular momentum flux over a sphere at a given radius
+    '''
     print("mint:")
     print("shape(rho) = "+str(shape(re.rho)))
     print("shape(uu1) = "+str(shape(re.uu[1])))
@@ -173,7 +182,7 @@ def readndump(n1, n2, rref=5.0):
     re.rg("gdump")
     nx=re.nx ; ny=re.ny ; nz=re.nz
     gdet=re.gdet ; gcov=re.gcov ; _dx2=re._dx2 ; _dx3=re._dx3 ; drdx=re.drdx
-    r=re.r ; h=re.h ; phi=re.phi # importing coordinate mesh
+    r=re.r ; h=re.h ; phi=re.ph # importing coordinate mesh
     if (n2<n1):
         print("readndump: invalid file number range")
         exit()
