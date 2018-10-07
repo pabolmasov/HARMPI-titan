@@ -175,13 +175,14 @@ def mint(rref):
     return maccre, mwind, old_div(laccre,maccre), old_div(lwind,mwind)
 
 def readndump(n1, n2, rref=5.0):
-
+    global TudEM, TudMA, Tud
 #    run=unique(r)
 #    nr=run[where(run<rref)].argmax()
 
     re.rg("gdump")
     nx=re.nx ; ny=re.ny ; nz=re.nz
     gdet=re.gdet ; gcov=re.gcov ; _dx2=re._dx2 ; _dx3=re._dx3 ; drdx=re.drdx
+    guu=re.guu ; gdd=re.gdd
     r=re.r ; h=re.h ; phi=re.ph # importing coordinate mesh
     if (n2<n1):
         print("readndump: invalid file number range")
@@ -216,7 +217,7 @@ def readndump(n1, n2, rref=5.0):
             mpuuh=uu[2]*magp ; mpudh=ud[2]*magp
             mpuup=uu[3]*magp ; mpudp=ud[3]*magp
 
-            tudem=re.TudEM ; tudma=re.TudMA
+            tudem=TudEM ; tudma=TudMA
             pmean=p
 	    # unorm=uaver
             magp_mean=magp
@@ -242,7 +243,7 @@ def readndump(n1, n2, rref=5.0):
             magp_mean+=magp
             aphi+=re.psicalc()
             #	    unorm+=uaver
-            tudem+=re.TudEM ; tudma+=re.TudMA
+            tudem+=TudEM ; tudma+=TudMA
         maccre, mwind, laccre, lwind = mint(rref)
         fmdot.write(str(re.t)+" "+str(maccre)+" "+str(mwind)+" "+str(old_div(laccre,maccre))+" "+str(old_div(lwind,mwind))+"\n")
     fmdot.close()
