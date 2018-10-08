@@ -52,7 +52,7 @@ def bhole(rhor):
 ##############################################
 
 def tedplotter(dire):
-    nr, nh, nphi, a, t=dinforead(dire+'/merge')
+    nr, nh, nphi, a, t=ar.dinforead(dire+'/merge')
     rfile=dire+'/merge_r.dat'
     fr=open(rfile, 'r')
     s=str.split(str.strip(fr.readline()))
@@ -189,18 +189,18 @@ def velread(prefix='merge_', nope=False, ifaphi=True):
     pudfile=prefix+'_pud.dat'
     mpuufile=prefix+'_mpuu.dat'
     mpudfile=prefix+'_mpud.dat'
-    uu0,uur, uuh, uup = rk.uread(uufile,[nr,nh]) # density-averaged velocity 
-    ud0,udr, udh, udp = rk.uread(udfile,[nr,nh]) # density-averaged velocity 
+    uu0,uur, uuh, uup = ar.uread(uufile,[nr,nh]) # density-averaged velocity 
+    ud0,udr, udh, udp = ar.uread(udfile,[nr,nh]) # density-averaged velocity 
     u0=sqrt(fabs(uu0*ud0))  ;   ur=sqrt(fabs(uur*udr))*sign(uur)  ;   uh=sqrt(fabs(uuh*udh))*sign(uuh)
     up=sqrt(fabs(uup*udp))*sign(uup)
     if(nope):
         pu0,pur, puh, pup = u0,ur, uh, up 
         mpu0,mpur, mpuh, mpup = u0,ur, uh, up 
     else:
-        puu0,puur, puuh, puup = rk.uread(puufile,[nr,nh]) # pressure-averaged velocity 
-        pud0,pudr, pudh, pudp = rk.uread(pudfile,[nr,nh]) # pressure-averaged velocity 
-        mpuu0,mpuur, mpuuh, mpuup = rk.uread(mpuufile,[nr,nh]) # pressure-averaged velocity 
-        mpud0,mpudr, mpudh, mpudp = rk.uread(mpudfile,[nr,nh]) # pressure-averaged velocity 
+        puu0,puur, puuh, puup = ar.uread(puufile,[nr,nh]) # pressure-averaged velocity 
+        pud0,pudr, pudh, pudp = ar.uread(pudfile,[nr,nh]) # pressure-averaged velocity 
+        mpuu0,mpuur, mpuuh, mpuup = ar.uread(mpuufile,[nr,nh]) # pressure-averaged velocity 
+        mpud0,mpudr, mpudh, mpudp = ar.uread(mpudfile,[nr,nh]) # pressure-averaged velocity 
         pu0=sqrt(fabs(puu0*pud0))  ;   pur=sqrt(fabs(puur*pudr))*sign(puur)  ;   puh=sqrt(fabs(puuh*pudh))*sign(puuh) ; pup=sqrt(fabs(puup*pudp))*sign(puup)
         mpu0=sqrt(fabs(mpuu0*mpud0))  ;   mpur=sqrt(fabs(mpuur*mpudr))*sign(mpuur)  ;   mpuh=sqrt(fabs(mpuuh*mpudh))*sign(mpuuh) ; mpup=sqrt(fabs(mpuup*mpudp))*sign(mpuup)
 
@@ -222,11 +222,11 @@ def velread(prefix='merge_', nope=False, ifaphi=True):
     return r2, h2, rho, p, mp, u0, ur, uh, up, pu0, pur, puh, pup, mpu0, mpur, mpuh, mpup, aphi
 
 # plots mean (phi- and t-averaged) maps of densities and velocities
-def mplotter(dire,nope=False):
+def mplotter(dire,nope=False, dmatrix=False):
 
-    dmatrix=True
+    #    dmatrix=True
 
-    nr, nh, nphi, a, t=dinforead(dire+'/merge')
+    nr, nh, nphi, a, t=ar.dinforead(dire+'/merge')
     r2, h2, rho, p, pm, u0, ur, uh, up, pu0, pur, puh, pup, mpu0, mpur, mpuh, mpup, aphi = velread(dire+'/merge')
 
     # 
@@ -307,6 +307,7 @@ def mplotter(dire,nope=False):
     ylabel(r'$z$')
     bhole(rhor)
     savefig(dire+'/rho.eps')
+    savefig(dire+'/rho.png')
     # beta magnetization plot:
     beta1=0.1 ; beta2=100. ; nbeta=30
     betalevs=log10((old_div(beta2,beta1))**(old_div(arange(nbeta),double(nbeta-1)))*beta1)
@@ -320,6 +321,7 @@ def mplotter(dire,nope=False):
     ylabel(r'$z$')
     bhole(rhor)
     savefig(dire+'/beta.eps')
+    savefig(dire+'/beta.png')
     # radial velocity
     clf()
     fig=figure()
@@ -334,6 +336,7 @@ def mplotter(dire,nope=False):
     bhole(rhor)
     fig.set_size_inches(8, 8)
     savefig(dire+'/omega.eps')
+    savefig(dire+'/omega.png')
     vlevs=(arange(ono)/double(ono)*2.-1.)*0.01
     vlevs[0]=ur.min()*1.1
     vlevs[ono-1]=ur.max()*1.1
@@ -390,6 +393,7 @@ def mplotter(dire,nope=False):
     bhole(rhor)
     fig.set_size_inches(15, 8)
     savefig(dire+'/stream.eps')
+    savefig(dire+'/stream.png')
     close()
     # near eqplane:
     xscale=10.
@@ -423,7 +427,7 @@ def mplotter(dire,nope=False):
     fig.set_size_inches(5*2+1, 5*2*hdisk+1.5)
     fig.tight_layout(pad=0.5)
     savefig(dire+'/streamband.eps')
-    savefig(dire+'/streamband.jpg')
+    savefig(dire+'/streamband.png')
     close()
     vratmin=0.5 # 0.2
     vratmax=2.5 # 1.
@@ -446,7 +450,7 @@ def mplotter(dire,nope=False):
     fig.set_size_inches(5*2+1, 5*2*hdisk+1.5)
     fig.tight_layout(pad=0.5)
     savefig(dire+'/streamband_mag.eps')
-    savefig(dire+'/streamband_mag.jpg')
+    savefig(dire+'/streamband_mag.png')
     close()
 
     # vertical slice:
@@ -477,7 +481,8 @@ def mplotter(dire,nope=False):
     ylim(0.,1.)
     fig.set_size_inches(8, 6)
     fig.tight_layout(pad=1.0,h_pad=0.5, w_pad=0.5)
-    savefig('/home/pasha/harm/harmpi/'+dire+'/vverts.eps')
+    savefig(dire+'/vverts.eps')
+    savefig(dire+'/vverts.png')
     close()
     clf()
     contourf(r2*sin(h2), r2*cos(h2), uh,levels=vlevs,norm=norm)
@@ -490,6 +495,8 @@ def mplotter(dire,nope=False):
     ylabel(r'$z$')
     bhole(rhor)
     savefig(dire+'/uh.eps')
+    savefig(dire+'/uh.png')
+    close('all')
     # turbulent velocity parameters:
     vmin=1e-8
     vmax=10.
@@ -721,7 +728,9 @@ def ascframe(prefix='dumps/dump000', xmax=20.):
     p = ar.readascone(pfile, [nr,nh])
 
     # velocity field:
-    ur, uh, omega = ar.readasc_uu(uufile, [nr,nh])
+    ut, ur,uh, up = ar.uread(uufile,[nr,nh])
+    omega = up/ut
+    #    ur, uh, omega = ar.readasc_uu(uufile, [nr,nh])
 
     # origin variables:
     orr, orth, orphi = ar.readasc_ori(orifile, [nr,nh])
@@ -860,7 +869,7 @@ def eqframe(prefix):
     uufile=prefix+'_eq_uu.dat'
     udfile=prefix+'_eq_ud.dat'
 
-    nr, nh, nphi, a, t=dinforead(prefix)
+    nr, nh, nphi, a, t=ar.dinforead(prefix)
 
     # radial mesh:
     fr=open(rfile, 'r')
@@ -987,7 +996,8 @@ def dumpmovie():
     # ffmpeg -framerate 15 -pattern_type glob -i 'titan2/dump????_rho.png' -b 4096k titanic2_rho_2.mp4
     # ffmpeg -framerate 15 -pattern_type glob -i 'titan2/dump???_eq_beta.png' -b 4096k titanic2_beta1.mp4
     # ffmpeg -framerate 15 -pattern_type glob -i 'titan2/dump????_eq_beta.png' -b 4096k titanic2_beta2.mp4
-
+    # ffmpeg -framerate 15 -pattern_type glob -i 'titania/dumps/dump???_rho.png' -b 4096k titania_rho1.mp4
+    # ffmpeg -framerate 15 -pattern_type glob -i 'titania/dumps/dump????_rho.png' -b 4096k titania_rho2.mp4
 # making a plot of a PDS produced by powerstack
 def readsp():
 
@@ -1002,7 +1012,7 @@ def readsp():
     kphi=np.reshape(kphi, [nr,nh,nphi])
     krun=kr[:,0,0] ; khun=kh[0,:,0] ; kpun=kphi[0,0,:]
     print(shape(pds3d))
-    # rk.uread('pdsout.dat')
+    # ar.uread('pdsout.dat')
     # plotting
     pds2d=pds3d.mean(axis=-1) # average over phi
     dpds2d=dpds3d.mean(axis=-1) # average over phi

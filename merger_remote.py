@@ -155,10 +155,10 @@ def mint(rref):
     '''
     integrates mass and angular momentum flux over a sphere at a given radius
     '''
-    print("mint:")
-    print("shape(rho) = "+str(shape(re.rho)))
-    print("shape(uu1) = "+str(shape(re.uu[1])))
-    print("shape gdet = "+str(shape(re.gdet)))
+    #    print("mint:")
+    #    print("shape(rho) = "+str(shape(re.rho)))
+    #    print("shape(uu1) = "+str(shape(re.uu[1])))
+    #    print("shape gdet = "+str(shape(re.gdet)))
     hun=unique(re.h) ;     run=unique(re.r)
     gdet=re.gdet ; gcov=re.gcov ; _dx2=re._dx2 ; _dx3=re._dx3 ; drdx=re.drdx
     uu=re.uu ; ud=re.ud ; rho=re.rho ; _dx2=re._dx2 ; _dx3=re._dx3
@@ -195,6 +195,7 @@ def readndump(n1, n2, rref=5.0):
 
     for k in n:
         fname=re.dumpname(k)
+        print("readndump: "+fname)
         re.rd(fname)
         Tcalcud()
         p=(re.gam-1.)*re.ug

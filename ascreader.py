@@ -43,25 +43,15 @@ def readascmeshes(prefix):
     print(nr, nh)
     return r2,h2
 
-def readasc_uu(uufile, newshape):
-    '''
-    reading stored covariant velocities from ASCII file uufile
-    There is an rk.uread procedure that does about the same
-    '''
-    fuu=open(uufile, 'r')
-    s=str.split(str.strip(fuu.readline()))
-    ur=[] ; uh=[] ; omega=[]
-    while(s):
-        ur.append(s[1])
-        uh.append(s[2])
-        omega.append(old_div(double(s[3]),double(s[0])))
-        s=str.split(str.strip(fuu.readline()))
-    fuu.close()
-    ur=asarray(ur, dtype=double) ;   uh=asarray(uh, dtype=double)
-    ur=reshape(ur, newshape) ; uh=reshape(uh, newshape)
-    omega=asarray(omega, dtype=double)
-    omega=reshape(omega, newhape)
-    return ur, uh, omega
+# reading a four-column text file:
+def uread(infile, dims):
+
+    lines=loadtxt('titania/merge_uu.dat')
+    u0=reshape(asarray(lines[:,0], dtype=double), dims)
+    u1=reshape(asarray(lines[:,1], dtype=double), dims)
+    u2=reshape(asarray(lines[:,2], dtype=double), dims)
+    u3=reshape(asarray(lines[:,3], dtype=double), dims)
+    return u0, u1, u2, u3
 
 def readasc_ori(orifile, newshape):
     fori=open(orifile, 'r')
