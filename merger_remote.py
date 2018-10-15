@@ -43,7 +43,7 @@ def faraday():
     return omegaf1, omegaf2
 
 def Tcalcud():
-    global Tud, TudEM, TudMA
+    global TudEM, TudMA, Tud
     global mu, sigma
     global enth
     global unb, isunbound
@@ -60,9 +60,9 @@ def Tcalcud():
             TudEM[kapa,nu] = re.bsq*re.uu[kapa]*re.ud[nu] + 0.5*re.bsq*delta - re.bu[kapa]*re.bd[nu]
             TudMA[kapa,nu] = w*re.uu[kapa]*re.ud[nu]+pg*delta
             #Tud[kapa,nu] = eta*uu[kapa]*ud[nu]+(pg+0.5*bsq)*delta-bu[kapa]*bd[nu]
-            re.Tud[kapa,nu] = re.TudEM[kapa,nu] + re.TudMA[kapa,nu]
+            Tud[kapa,nu] = TudEM[kapa,nu] + TudMA[kapa,nu]
     mu = old_div(-Tud[1,0],(re.rho*re.uu[1]))
-    sigma = old_div(re.TudEM[1,0],re.TudMA[1,0])
+    sigma = old_div(TudEM[1,0],TudMA[1,0])
     enth=1+re.ug*re.gam/re.rho
     unb=enth*re.ud[0]
     isunbound=(-unb>1.0)
@@ -86,7 +86,7 @@ def tetrad_h(uumean, udmean):
 
 def tetrad_p(uumean, udmean):
     guu=re.guu ; drdx=re.drdx
-    hh=sqrt(guu[3,3]+uumean[3]*uumean[3])
+    hh=sqrt(re.guu[3,3]+uumean[3]*uumean[3])
     return uumean[3]*udmean[0]/hh/drdx[0,0], uumean[3]*udmean[1]/hh/drdx[1,1], 0.*uumean[0]/drdx[2,2], (1.+uumean[3]*udmean[3])/hh/drdx[3,3]
 
 # outputting all the basic information about the dump to a file
@@ -166,14 +166,15 @@ def mint(rref):
     return maccre, mwind, old_div(laccre,maccre), old_div(lwind,mwind)
 
 def readndump(n1, n2, rref=5.0):
-
+    global Tud, TudEM, TudMA
 #    run=unique(r)
 #    nr=run[where(run<rref)].argmax()
 
     re.rg("gdump")
     nx=re.nx ; ny=re.ny ; nz=re.nz
     gdet=re.gdet ; gcov=re.gcov ; _dx2=re._dx2 ; _dx3=re._dx3 ; drdx=re.drdx
-    r=re.r ; h=re.h ; phi=re.phi # importing coordinate mesh
+    guu=re.guu ; gdd=re.gdd
+    r=re.r ; h=re.h ; phi=re.ph # importing coordinate mesh
     if (n2<n1):
         print("readndump: invalid file number range")
         exit()
@@ -185,6 +186,7 @@ def readndump(n1, n2, rref=5.0):
 
     for k in n:
         fname=re.dumpname(k)
+        print("readndump: "+fname)
         re.rd(fname)
         Tcalcud()
         p=(re.gam-1.)*re.ug
@@ -207,7 +209,7 @@ def readndump(n1, n2, rref=5.0):
             mpuuh=uu[2]*magp ; mpudh=ud[2]*magp
             mpuup=uu[3]*magp ; mpudp=ud[3]*magp
 
-            tudem=re.TudEM ; tudma=re.TudMA
+            tudem=TudEM ; tudma=TudMA
             pmean=p
 	    # unorm=uaver
             magp_mean=magp
@@ -233,7 +235,7 @@ def readndump(n1, n2, rref=5.0):
             magp_mean+=magp
             aphi+=re.psicalc()
             #	    unorm+=uaver
-            tudem+=re.TudEM ; tudma+=re.TudMA
+            tudem+=TudEM ; tudma+=TudMA
         maccre, mwind, laccre, lwind = mint(rref)
         fmdot.write(str(re.t)+" "+str(maccre)+" "+str(mwind)+" "+str(old_div(laccre,maccre))+" "+str(old_div(lwind,mwind))+"\n")
     fmdot.close()
@@ -583,7 +585,7 @@ def framerip(fname, alifactor=1):
     # alifactor = alias factor, every alifactorth point in r and th will be outputted, phi averaged over
 #    rg("gdump")
 
-    re.rd("dumps/"+fname)
+    re.rd(fname)
 	#    print(rho)
     run=unique(re.r) ;    hun=unique(re.h)
     drdx=re.drdx ; uu=re.uu ; ud=re.ud ; rho=re.rho ; ug=re.ug ; B=re.B; bsq=re.bsq # can we just import all the data?
@@ -658,38 +660,43 @@ def framerip(fname, alifactor=1):
     os.system('tar -cf dumps/'+fname+'.tar dumps/'+fname+'_*.dat')
 
 # makes ascii files with degraded resolution from all the dumps
-def defaultrun():
+def defaultrun(dire = ''):
 
-    dire=''
-    rref=10.
- #   os.chdir(dire)
-#    dumpinfo()
-    re.rg(dire+"gdump")
-    run=unique(re.r)
-    nr=run[where(run<rref)].argmax() # where the radius is closest to rref (from inside)
-
-    fout=open(dire+"dumps_mevol.dat", "w")
-
+    rref=[2.,5.,10.,20.]
+    nref=size(rref)
+    prevdir = os.getcwd()
+    os.chdir(dire)
+    #    dumpinfo()
+    re.rg("gdump")
     flist=get_sorted_file_list()
+    os.chdir(prevdir)
+    print(os.getcwd())
+    
+    fout = [open(dire+"dumps_mevol"+str(rref[x])+".dat", 'w') for x in arange(nref)]
+
+    #    flist=get_sorted_file_list()
     nlist=size(flist)
     print(str(nlist)+" files")
     print(flist)
     for k in arange(nlist):
-        dumpinfo("../"+flist[k])
-        framerip("../"+flist[k], alifactor=3)
-        maccre, mwind, laccre, lwind = mint(rref)
-        fromabove("../"+flist[k], alifactor=3)
-        print("merger_remote defaultrun: reducing "+str(flist[k]))
-        fout.write(str(re.t)+" "+str(maccre)+" "+str(mwind)+" "+str(laccre)+" "+str(lwind)+"\n")
-    fout.close()
+        #        dumpinfo(dire+flist[k])
+        #         print(os.getcwd())
+        framerip("../"+dire+flist[k], alifactor=3)
+        fromabove("../"+dire+flist[k], alifactor=3)
+        print("merger_remote defaultrun: reducing "+str(dire+flist[k]))
+        for kref in arange(nref):
+            maccre, mwind, laccre, lwind = mint(rref[kref])
+            fout[kref].write(str(re.t)+" "+str(maccre)+" "+str(mwind)+" "+str(laccre)+" "+str(lwind)+"\n")
+    for kref in arange(nref):
+        fout[kref].close()
 
 # produces time-averaged frames:
 def corveerun(nfirst=None, nlast=None):
     re.rg("gdump")
     readndump(nfirst,nlast)
-    corvee(nfirst, nlast)
+    #    corvee(nfirst, nlast)
     os.system('tar -cf mergereads.tar merge_*.dat')
 
-defaultrun()
-# corveerun()
+defaultrun(dire='regularmf/')
+# corveerun(nfirst=100, nlast=1628)
 
