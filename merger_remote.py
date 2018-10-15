@@ -594,7 +594,7 @@ def framerip(fname, alifactor=1):
     # alifactor = alias factor, every alifactorth point in r and th will be outputted, phi averaged over
 #    rg("gdump")
 
-    re.rd("dumps/"+fname)
+    re.rd(fname)
 	#    print(rho)
     run=unique(re.r) ;    hun=unique(re.h)
     drdx=re.drdx ; uu=re.uu ; ud=re.ud ; rho=re.rho ; ug=re.ug ; B=re.B; bsq=re.bsq # can we just import all the data?
@@ -672,27 +672,31 @@ def framerip(fname, alifactor=1):
 def defaultrun():
 
     dire=''
-    rref=10.
- #   os.chdir(dire)
-#    dumpinfo()
+    rref=[2.,5.,10.,20.]
+    nref=size(rref)
+    prevdir = os.getcwd()
+    os.chdir(dire)
     re.rg(dire+"gdump")
-    run=unique(re.r)
-    nr=run[where(run<rref)].argmax() # where the radius is closest to rref (from inside)
+    flist=get_sorted_file_list(prefix=dire+"dumps/dump")
+    os.chdir(prevdir)
+    print(os.getcwd())
 
-    fout=open(dire+"dumps_mevol.dat", "w")
-
-    flist=get_sorted_file_list()
+    fout = [open(dire+"dumps_mevol"+str(rref[x])+".dat", 'w') for x in arange(nref)]
+    [print(dire+"dumps_mevol"+str(rref[x])+".dat") for x in arange(nref)]
+    
     nlist=size(flist)
     print(str(nlist)+" files")
     print(flist)
     for k in arange(nlist):
-        dumpinfo("../"+flist[k])
-        framerip("../"+flist[k], alifactor=3)
-        maccre, mwind, laccre, lwind = mint(rref)
-        fromabove("../"+flist[k], alifactor=3)
+        dumpinfo("../"+dire+flist[k])
+        framerip("../"+dire+flist[k], alifactor=3)
+        fromabove("../"+dire+flist[k], alifactor=3)
         print("merger_remote defaultrun: reducing "+str(flist[k]))
-        fout.write(str(re.t)+" "+str(maccre)+" "+str(mwind)+" "+str(laccre)+" "+str(lwind)+"\n")
-    fout.close()
+        for kref in arange(nref):
+            maccre, mwind, laccre, lwind = mint(rref[kref])
+            fout[kref].write(str(re.t)+" "+str(maccre)+" "+str(mwind)+" "+str(laccre)+" "+str(lwind)+"\n")
+    for kref in arange(nref):
+        fout[kref].close()
 
 # produces time-averaged frames:
 def corveerun(nfirst=None, nlast=None):
@@ -701,6 +705,6 @@ def corveerun(nfirst=None, nlast=None):
     corvee(nfirst, nlast)
     os.system('tar -cf mergereads.tar merge_*.dat')
 
-defaultrun()
+# defaultrun()
 # corveerun()
 

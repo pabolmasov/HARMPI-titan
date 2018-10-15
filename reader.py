@@ -27,7 +27,6 @@ def dumpname(n):
 def rd(dump):
     read_file(dump,type="dump")
 
-
 #read in a grid file
 def rg(dump):
     read_file(dump,type="gdump")
