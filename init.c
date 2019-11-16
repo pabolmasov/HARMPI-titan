@@ -107,6 +107,7 @@ void init()
     init_monopole(100.);
     break;
   case TORUS_PROBLEM:
+  case IC_TORUS:
     init_torus();
     break;
   case SNDWAVE_TEST :

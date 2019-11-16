@@ -391,9 +391,9 @@ void vchar(double *pr, struct of_state *q, struct of_geom *geom, int js,
 void misc_source(double *ph, double *phxp1, double *phxm1, double *phyp1, double *phym1,int ii, int jj, int kk, struct of_geom *geom,
                  struct of_state *q, double *dU, double Dt)
 {
-  
-  double dudx1,dudx2;
-  
+    double dudx1,dudx2;
+   
+  //  get_phys_coord(5,0,0,&r,&th,&phi) ;
   
   /* This is merely an example and does not represent any physical source term that I can think of */
   /* Place your calculation for the extra source terms here */
@@ -402,10 +402,21 @@ void misc_source(double *ph, double *phxp1, double *phxm1, double *phyp1, double
   //  dU[U1 ]  += ph[U1 ] ;
   //  dU[U2 ]  += ph[U2 ] ;
   //  dU[U3 ]  += ph[U3 ] ;
-  
-  
-  
-  
+
+#if WHICHPROBLEM == IC_TORUS
+    double r;
+    double ic_uu0 = 0.01, ic_uu, ic_norm = 1e-4;
+    double delta ;
+    delta = fabs(q->ucov[0]+q->ucov[1] * sqrt(fabs((geom->gcon[0][0]) / (geom->gcov[1][1])))) ;
+    
+    ic_uu = ic_uu0 * delta ; 
+    
+    dU[UU] = ic_norm * (ic_uu * ph[RHO] - ph[UU])/r/r *delta * fabs(geom->gcov[0][0]);
+    dU[U3] = - ic_norm * ph[U3] /r/r ;
+    dU[U2] = - ic_norm * ph[U2] /r/r ;
+    dU[U1] = - ic_norm * ph[U1] /r/r ;
+    
+#endif
   
   
 }
