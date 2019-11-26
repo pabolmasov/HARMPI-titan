@@ -1,9 +1,12 @@
 dumps/*
 *.eps
+*.png
+*.jpg
 *.o
 harm
 image_interp
 gr
 maps/*
+*.dat
 HARMPI/*
 *.backup
