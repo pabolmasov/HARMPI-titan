@@ -108,6 +108,7 @@ void init()
     break;
   case TORUS_PROBLEM:
   case IC_TORUS:
+  case AMIRSOURCE:
     init_torus();
     break;
   case SNDWAVE_TEST :
@@ -131,6 +132,7 @@ void init_torus()
   double ur,uh,up,u,rho ;
   double X[NDIM] ;
   struct of_geom geom ;
+  struct of_geom *geomp ;
 
   /* for disk interior */
   double l,rin,lnh,expm2chi,up1 ;
@@ -197,6 +199,18 @@ void init_torus()
   set_arrays() ;
   set_grid() ;
 
+  /*
+  if(MASTER==mpi_rank) {
+    double ud[4];
+    get_phys_coord(50,64,0,&r,&th,&phi) ;
+    get_geometry(50,64,0,CENT,&geom) ;
+    fprintf(stderr, "R = %lg\n", r);
+    fprintf(stderr, "geom_00 = %lg\n", geom.gcon[0][0]);
+    udK_calc(ud, r, &geom);
+    fprintf(stderr, "U = %lg; %lg; %lg; %lg\n", ud[0], ud[1], ud[2], ud[3]);
+    getchar();
+  } 
+  */ 
   get_phys_coord(5,0,0,&r,&th,&phi) ;
   if(MASTER==mpi_rank) {
     fprintf(stderr,"r[5]: %g\n",r) ;

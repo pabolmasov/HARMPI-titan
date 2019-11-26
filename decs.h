@@ -79,9 +79,9 @@
 #define SNDWAVE_TEST 7
 #define ENTWAVE_TEST 8
 #define IC_TORUS 9
+#define AMIRSOURCE 10
 
-
-#define WHICHPROBLEM IC_TORUS
+#define WHICHPROBLEM AMIRSOURCE
 #define DOKTOT   0
 
 /** here are the few things that we change frequently **/
@@ -124,6 +124,15 @@
 #define OUTFLOW  (0)          /* whether or not to use outflow boundary conditions in all directions */
 #elif WHICHPROBLEM == IC_TORUS
 #define N1       (128)         /* number of physical zones in X1-direction */
+#define N2       (128)          /* number of physical zones in X2-direction */
+#define N3       (1)          /* number of physical zones in X3-direction */
+#define GR       (1)          /* whether or not to use GR */
+#define BL       (1)          /* whether or not to use BL coords */
+#define INFLOW   (0)          /* whether or not to allow inflow at boundaries */
+#define PERIODIC (0)          /* whether or not to use periodic boundary conditions */
+#define OUTFLOW  (0)          /* whether or not to use outflow boundary conditions in all directions */
+#elif WHICHPROBLEM == AMIRSOURCE
+#define N1       (256)         /* number of physical zones in X1-direction */
 #define N2       (128)          /* number of physical zones in X2-direction */
 #define N3       (1)          /* number of physical zones in X3-direction */
 #define GR       (1)          /* whether or not to use GR */
@@ -613,8 +622,9 @@ void init(void) ;
 void lower(double *a, struct of_geom *geom, double *b) ;
 void ludcmp(double **a, int n, int *indx, double *d) ;
 void mhd_calc(double *pr, int dir, struct of_state *q, double *mhd)  ;
-void misc_source(double *ph, double *phxp1, double *phxm1, double *phyp1, double *phym1,int ii, int jj, int kk, struct of_geom *geom,
-                 struct of_state *q, double *dU, double Dt);
+//void misc_source(double *ph, double *phxp1, double *phxm1, double *phyp1, double *phym1,int ii, int jj, int kk, struct of_geom *geom, struct of_state *q, double *dU, double Dt);
+void misc_source(double *ph, int ii, int jj, int kk, struct of_geom *geom, struct of_state *q, double *dU, double Dt);
+void udK_calc(double *ud, double r, struct of_geom *geom);
 void primtoflux(double *pa, struct of_state *q, int dir, struct of_geom *geom,
 			double *fl) ;
 void primtoU(double *p, struct of_state *q, struct of_geom *geom, double *U);

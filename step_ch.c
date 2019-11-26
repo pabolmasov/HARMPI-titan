@@ -222,7 +222,7 @@ double advance(
 
     source(pb[i][j][k],&geom,i,j,k,dU,Dt) ;
     get_state(pb[i][j][k],&geom,&q) ;
-    //misc_source(pb[i][j][k],pb[i+1][j][k],pb[i-1][j][k], pb[i][j+1][k],pb[i][j-1][k],i, j, k, &geom,&q,dU, Dt);
+    // misc_source(pb[i][j][k],pb[i+1][j][k],pb[i-1][j][k], pb[i][j+1][k],pb[i][j-1][k],i, j, k, &geom,&q,dU, Dt);
 
     get_state(pi[i][j][k],&geom,&q) ;
     primtoU(pi[i][j][k],&q,&geom,U) ;

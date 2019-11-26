@@ -151,16 +151,10 @@ void source(double *ph, struct of_geom *geom, int ii, int jj, int kk, double *dU
     dU[U1] += mhd[j][k]*conn[ii][jj][kk][k][1][j] ;
     dU[U2] += mhd[j][k]*conn[ii][jj][kk][k][2][j] ;
     dU[U3] += mhd[j][k]*conn[ii][jj][kk][k][3][j] ;
-
+    misc_source(ph, ii, jj, kk, geom, &q, dU, Dt) ;
   }
 
-
-  
-  
-  
-  
-  //misc_source(ph, ii, jj, geom, &q, dU, Dt) ;
-  
+  // double *ph, double *phxp1, double *phxm1, double *phyp1, double *phym1,int ii, int jj, int kk, struct of_geom *geom, struct of_state *q, double *dU, double Dt
   PLOOP dU[m] *= geom->g ;
   
   /* done! */
@@ -388,35 +382,71 @@ void vchar(double *pr, struct of_state *q, struct of_geom *geom, int js,
 
 /* Add any additional source terms (e.g. cooling functions) */
 
-void misc_source(double *ph, double *phxp1, double *phxm1, double *phyp1, double *phym1,int ii, int jj, int kk, struct of_geom *geom,
-                 struct of_state *q, double *dU, double Dt)
+/* void misc_source(double *ph, double *phxp1, double *phxm1, double *phyp1, double *phym1,int ii, int jj, int kk, struct of_geom *geom, struct of_state *q, double *dU, double Dt) */
+void misc_source(double *ph, int ii, int jj, int kk, struct of_geom *geom, struct of_state *q, double *dU, double Dt)  
 {
-    double dudx1,dudx2;
-   
-  //  get_phys_coord(5,0,0,&r,&th,&phi) ;
-  
-  /* This is merely an example and does not represent any physical source term that I can think of */
-  /* Place your calculation for the extra source terms here */
-  //  dU[RHO]  += ph[RHO] ;
-  //  dU[UU ]  += ph[UU ] ;
-  //  dU[U1 ]  += ph[U1 ] ;
-  //  dU[U2 ]  += ph[U2 ] ;
-  //  dU[U3 ]  += ph[U3 ] ;
 
 #if WHICHPROBLEM == IC_TORUS
-    double r;
-    double ic_uu0 = 0.01, ic_uu, ic_norm = 1e-4;
-    double delta ;
-    delta = fabs(q->ucov[0]+q->ucov[1] * sqrt(fabs((geom->gcon[0][0]) / (geom->gcov[1][1])))) ;
+  double r, th, phi;
+  get_phys_coord(ii,jj,kk,&r,&th,&phi) ;
+  double ic_uu, ic_uu0 = 0.01, ic_norm = 1.e-2;
+  double delta ;
+  delta = fabs(q->ucov[0]+q->ucov[1] * sqrt(fabs((geom->gcov[0][0]) / (geom->gcov[1][1])))) ;
     
-    ic_uu = ic_uu0 * delta ; 
+  ic_uu = ic_uu0 * delta ; 
     
-    dU[UU] = ic_norm * (ic_uu * ph[RHO] - ph[UU])/r/r *delta * fabs(geom->gcov[0][0]);
-    dU[U3] = - ic_norm * ph[U3] /r/r ;
-    dU[U2] = - ic_norm * ph[U2] /r/r ;
-    dU[U1] = - ic_norm * ph[U1] /r/r ;
-    
+  dU[UU] += ic_norm * (ic_uu * ph[RHO] - ph[UU]) * delta /r/r ; // * fabs(geom->gcov[0][0]);
+  dU[U3] += - ic_norm * ph[U3] * ph[RHO] /r/r ;
+  dU[U2] += - ic_norm * ph[U2] * ph[RHO] /r/r ;
+  dU[U1] += ic_norm * (ic_uu - ph[U1]) * ph[RHO] /r/r ;
+    //    fprintf(stderr,"*");
 #endif
+
+#if WHICHPROBLEM == AMIRSOURCE
+  double rsource = 25., sigmar = 2., mdot = 1e-4 ; 
+  double r, th, phi, x, drho = 0., mu0 =  1.0;
+  double risco();
+
+  get_phys_coord(ii,jj,kk,&r,&th,&phi) ;
+  x=(r-rsource)/sigmar ;
+  if((x<10.) && (r>risco())){
+    double udK[4]; // covariant Keplerian components in the eqplane
+
+    udK_calc(udK, r, geom);
+    
+    drho = exp(-x*x/2.) * mdot /(2.*MPI*MPI * rsource * sigmar*sigmar );
+    dU[RHO] += drho;
+    dU[U3] += drho * udK[3];
+    dU[UU] += drho * udK[0]*mu0;
+  }
+#endif
+}
   
-  
+////////////////////////////////////////////////////
+void udK_calc(double *ud, double r, struct of_geom *geom)
+{
+  /* calculates 4-velocity components for Keplerian flow in the equatorial plane */
+  double rsq = r*r, rroot = sqrt(r), asq = a*a;
+  double omegaK = 1./(r*sqrt(r)+a), lK = (rsq - 2.*a*rroot+asq)/((r-2.)*rroot+a);
+  ud[0] = 1./sqrt(-(geom->gcon[0][0]+ 2.*omegaK * geom->gcon[0][1] + omegaK*omegaK * geom->gcon[1][1]));
+  ud[1] = 0. ; ud[2] = 0.; 
+  ud[3] = ud[0] * lK;
+
+  return;
+}
+
+double risco()
+{
+  /* last stable circular orbit radius*/
+  double sgn(double);
+  double z1=1.+pow(1.-a*a,1./3.)*(pow(1.+a,1./3.)+pow(1.-a,1./3.));
+  double z2=sqrt(3.*a*a+z1*z1);
+  // double x = 0.;
+  //  fprintf(stderr, "sign(%lg) = %lg", x, sgn(x));
+  return 3.+z2-sgn(a)*sqrt((3.-z1)*(3.+z1+2.*z2));
+}
+
+double sgn(double x)
+{ // sign function
+  return (x > 0) - (x < 0);
 }
