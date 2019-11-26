@@ -143,7 +143,7 @@ def mkmov_simple(starti=0,endi=400):
         re.rd("dump%03d" % i);
         aphi=re.psicalc()
         if i == starti: amax = aphi.max()
-        cs, cb = plco(np.log10(re.rho),levels=np.linspace(-8,0,100),isfilled=1,k=0,xy=1,xmax=10,ymax=5,dobh=1,cb=1,extend="both",pretty=1)
+        cs, cb = plco(np.log10(re.rho),levels=np.linspace(-8,0,100),isfilled=1,k=0,xy=1,xmax=30,ymax=15,dobh=1,cb=1,extend="both",pretty=1)
         ax = plt.gca()
         ax.set_xlabel(r"$R\ [r_g]$",fontsize=20,labelpad=-5)
         ax.set_ylabel(r"$z\ [r_g]$",fontsize=20,labelpad=-5)
@@ -364,8 +364,8 @@ def plc(myvar,**kwargs): #plc
     xcoord = kwargs.pop("xcoord",None)
     ycoord = kwargs.pop("ycoord",None)
     lin = kwargs.pop('lin',0)
-    xmax = kwargs.pop('xmax',10)
-    ymax = kwargs.pop('ymax',5)
+    xmax = kwargs.pop('xmax',30)
+    ymax = kwargs.pop('ymax',15)
     cbxlabel = kwargs.pop('cbxla',None)
     cbylabel = kwargs.pop('cbyla',None)
     fntsize = kwargs.pop("fntsize",20)
@@ -640,7 +640,7 @@ def origin_plot(dumpn, xmax=30.):
     
 def origins(n1, n2):   
     for k in np.arange(n2-n1)+n1:
-        origin_plot(k, xmax=20.)
+        origin_plot(k, xmax=30.)
 
 def tworho(n1, n2):
     file1=re.dumpname(n1) ; file2=re.dumpname(n2)
@@ -657,7 +657,7 @@ def tworho(n1, n2):
     levs=np.linspace(0.,rho1.max(), 10)
     xmax=50.
     plt.clf()
-    plt.contourf(x2, y2, np.squeeze(rho2[:,:,0]), levels=levs)
+    plt.contourf(x2, y2, (np.squeeze(rho2[:,:,0])), levels=levs)
     plt.contour(x2, y2, np.squeeze(rho2[:,:,0]), levels=levs, colors='k')
     plt.contour(x1, y1, np.squeeze(rho1[:,:,0]), levels=levs, colors='w')
     plt.xlim(0., xmax) ; plt.ylim(-xmax/4., xmax/2.)

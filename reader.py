@@ -469,15 +469,13 @@ def get_fracphi():
 ##########################
 # reading a four-column text file:
 def uread(infile, dims):
-    fin=open(infile, 'r')
-    s=str.split(str.strip(fin.readline()))
-    u0=int(s[0]) ; u1=int(s[1]) ; u2=int(s[2]) ; u3=int(s[3]) 
-    while(s):
-        u0=int(s[0]) ; u1=int(s[1]) ; u2=int(s[2]) ; u3=int(s[3]) 
-        s=str.split(str.strip(fin.readline()))
-    fin.close()
-    u0=reshape(asarray(u0, dtype=double), dims)
-    u1=reshape(asarray(u1, dtype=double), dims)
-    u2=reshape(asarray(u2, dtype=double), dims)
-    u3=reshape(asarray(u3, dtype=double), dims)
+
+    ulines = np.loadtxt(infile)
+
+    u0 = ulines[:,0] ; u1 = ulines[:,1] ; u2 = ulines[:,2] ; u3 = ulines[:,3]
+    
+    u0=np.reshape(u0, dims)
+    u1=np.reshape(u1, dims)
+    u2=np.reshape(u2, dims)
+    u3=np.reshape(u3, dims)
     return u0, u1, u2, u3

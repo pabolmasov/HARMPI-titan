@@ -85,7 +85,6 @@ void primtoflux(double *pr, struct of_state *q, int dir,
   
   PLOOP flux[m] *= geom->g ;
   
-  
 }
 
 /* calculate "conserved" quantities; provided strictly for
@@ -396,9 +395,9 @@ void misc_source(double *ph, int ii, int jj, int kk, struct of_geom *geom, struc
   ic_uu = ic_uu0 * delta ; 
     
   dU[UU] += ic_norm * (ic_uu * ph[RHO] - ph[UU]) * delta /r/r ; // * fabs(geom->gcov[0][0]);
-  dU[U3] += - ic_norm * ph[U3] * ph[RHO] /r/r ;
-  dU[U2] += - ic_norm * ph[U2] * ph[RHO] /r/r ;
-  dU[U1] += ic_norm * (ic_uu - ph[U1]) * ph[RHO] /r/r ;
+  dU[U3] += - ic_norm * q->ucov[3] * ph[RHO] /r/r ;
+  dU[U2] += - ic_norm * q->ucov[2] * ph[RHO] /r/r ;
+  dU[U1] += ic_norm * (ic_uu - q->ucov[1]) * ph[RHO] /r/r ;
     //    fprintf(stderr,"*");
 #endif
 

@@ -60,9 +60,9 @@ def Tcalcud():
             TudEM[kapa,nu] = re.bsq*re.uu[kapa]*re.ud[nu] + 0.5*re.bsq*delta - re.bu[kapa]*re.bd[nu]
             TudMA[kapa,nu] = w*re.uu[kapa]*re.ud[nu]+pg*delta
             #Tud[kapa,nu] = eta*uu[kapa]*ud[nu]+(pg+0.5*bsq)*delta-bu[kapa]*bd[nu]
-            re.Tud[kapa,nu] = re.TudEM[kapa,nu] + re.TudMA[kapa,nu]
+            Tud[kapa,nu] = TudEM[kapa,nu] + TudMA[kapa,nu]
     mu = old_div(-Tud[1,0],(re.rho*re.uu[1]))
-    sigma = old_div(re.TudEM[1,0],re.TudMA[1,0])
+    sigma = old_div(TudEM[1,0],TudMA[1,0])
     enth=1+re.ug*re.gam/re.rho
     unb=enth*re.ud[0]
     isunbound=(-unb>1.0)
@@ -71,6 +71,7 @@ def Tcalcud():
 # tetrad covariant components... and all the grid parameters should be set as well
 # on my laptop, the description is in ~/Arts/illum/frominside.tex
 def tetrad_t(uumean, udmean):
+    drdx=re.drdx
     return old_div(-udmean[0],drdx[0,0]), old_div(-udmean[1],drdx[1,1]), 0.*udmean[0]/drdx[2,2], old_div(-udmean[3],drdx[3,3])
 
 def tetrad_r(uumean, udmean):
@@ -106,7 +107,7 @@ def dumpinfo(prefix):
     print("time "+str(re.t))
     fout.close()
 
-# calculated and writes out evolution of some global parameters; rref is the radius at which the mass and momentum flows are calculated
+# calculates and writes out evolution of some global parameters; rref is the radius at which the mass and momentum flows are calculated
 def glevol(nmax, rref):
 #    global rho, uu
     re.rg("gdump")
@@ -166,14 +167,18 @@ def mint(rref):
     return maccre, mwind, old_div(laccre,maccre), old_div(lwind,mwind)
 
 def readndump(n1, n2, rref=5.0):
-
-#    run=unique(r)
-#    nr=run[where(run<rref)].argmax()
+    '''
+    calculates mean maps for the frames n1-n2
+    rref is reference radius where the mass accretion rate is calculated 
+    '''
+    #    run=unique(r)
+    #    nr=run[where(run<rref)].argmax()
 
     re.rg("gdump")
     nx=re.nx ; ny=re.ny ; nz=re.nz
     gdet=re.gdet ; gcov=re.gcov ; _dx2=re._dx2 ; _dx3=re._dx3 ; drdx=re.drdx
-    r=re.r ; h=re.h ; phi=re.phi # importing coordinate mesh
+    guu=re.guu ; gdd=re.gdd
+    r=re.r ; h=re.h ; phi=re.ph # importing coordinate mesh
     if (n2<n1):
         print("readndump: invalid file number range")
         exit()
@@ -207,11 +212,13 @@ def readndump(n1, n2, rref=5.0):
             mpuuh=uu[2]*magp ; mpudh=ud[2]*magp
             mpuup=uu[3]*magp ; mpudp=ud[3]*magp
 
-            tudem=re.TudEM ; tudma=re.TudMA
+            tudem=TudEM ; tudma=TudMA
             pmean=p
 	    # unorm=uaver
             magp_mean=magp
             aphi=re.psicalc()
+            dumpinfo(fname)
+            os.system("cp dumps/"+fname+"_dinfo.dat merge_dinfo.dat")
         else:
             rhomean+=rho
             rhosqmean+=rho**2
@@ -233,7 +240,7 @@ def readndump(n1, n2, rref=5.0):
             magp_mean+=magp
             aphi+=re.psicalc()
             #	    unorm+=uaver
-            tudem+=re.TudEM ; tudma+=re.TudMA
+            tudem+=TudEM ; tudma+=TudMA
         maccre, mwind, laccre, lwind = mint(rref)
         fmdot.write(str(re.t)+" "+str(maccre)+" "+str(mwind)+" "+str(old_div(laccre,maccre))+" "+str(old_div(lwind,mwind))+"\n")
     fmdot.close()
@@ -414,7 +421,7 @@ def corvee(n1,n2):
     re.rg("gdump")
     nx=re.nx ; ny=re.ny ; nz=re.nz
     gdet=re.gdet ; gcov=re.gcov ; _dx2=re._dx2 ; _dx3=re._dx3 ; drdx=re.drdx
-    r=re.r ; h=re.h ; phi=re.phi # importing coordinate mesh
+    r=re.r ; h=re.h ; phi=re.ph # importing coordinate mesh
 
     # velocities:
     uufile='merge_uu.dat'
@@ -686,10 +693,11 @@ def defaultrun():
 # produces time-averaged frames:
 def corveerun(nfirst=None, nlast=None):
     re.rg("gdump")
+    
     readndump(nfirst,nlast)
-    corvee(nfirst, nlast)
+    #    corvee(nfirst, nlast)
     os.system('tar -cf mergereads.tar merge_*.dat')
 
-defaultrun()
+# defaultrun()
 # corveerun()
 

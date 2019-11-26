@@ -29,6 +29,8 @@ import time
 import harm_script as h
 import reader as rk
 
+ioff()
+
 # last stable orbit
 def arms(a):
     z1=1.+(1.-a*a)**(old_div(1.,3.))*((1.+a)**(old_div(1.,3.))+(1.-a)**(old_div(1.,3.)))
@@ -285,9 +287,9 @@ def velread(prefix='merge_', nope=False, ifaphi=True):
     return r2, h2, rho, p, mp, u0, ur, uh, up, pu0, pur, puh, pup, mpu0, mpur, mpuh, mpup, aphi
 
 # plots mean (phi- and t-averaged) maps of densities and velocities
-def mplotter(dire,nope=False):
+def mplotter(dire='.',nope=False):
 
-    dmatrix=True
+    dmatrix=False
 
     nr, nh, nphi, a, t=dinforead(dire+'/merge')
     r2, h2, rho, p, pm, u0, ur, uh, up, pu0, pur, puh, pup, mpu0, mpur, mpuh, mpup, aphi = velread(dire+'/merge')
@@ -295,7 +297,7 @@ def mplotter(dire,nope=False):
     # 
     # velocity correlation matrix:
     if(dmatrix):
-        dfile='/home/pasha/harm/harmpi/'+dire+'/merge_corv.dat'
+        dfile=dire+'/merge_corv.dat'
         fd=open(dfile, 'r')
         #    s=str.split(str.strip(fd.readline()))
         dxy=zeros([3,3,nr,nh], dtype=double)
@@ -370,6 +372,7 @@ def mplotter(dire,nope=False):
     ylabel(r'$z$')
     bhole(rhor)
     savefig(dire+'/rho.eps')
+    savefig(dire+'/rho.png')
     # beta magnetization plot:
     beta1=0.1 ; beta2=100. ; nbeta=30
     betalevs=log10((old_div(beta2,beta1))**(old_div(arange(nbeta),double(nbeta-1)))*beta1)
@@ -383,6 +386,7 @@ def mplotter(dire,nope=False):
     ylabel(r'$z$')
     bhole(rhor)
     savefig(dire+'/beta.eps')
+    savefig(dire+'/beta.png')
     # radial velocity
     clf()
     fig=figure()
@@ -397,6 +401,7 @@ def mplotter(dire,nope=False):
     bhole(rhor)
     fig.set_size_inches(8, 8)
     savefig(dire+'/omega.eps')
+    savefig(dire+'/omega.png')
     vlevs=(arange(ono)/double(ono)*2.-1.)*0.01
     vlevs[0]=ur.min()*1.1
     vlevs[ono-1]=ur.max()*1.1
@@ -453,6 +458,7 @@ def mplotter(dire,nope=False):
     bhole(rhor)
     fig.set_size_inches(15, 8)
     savefig(dire+'/stream.eps')
+    savefig(dire+'/stream.png')
     close()
     # near eqplane:
     xscale=10.
@@ -486,7 +492,7 @@ def mplotter(dire,nope=False):
     fig.set_size_inches(5*2+1, 5*2*hdisk+1.5)
     fig.tight_layout(pad=0.5)
     savefig(dire+'/streamband.eps')
-    savefig(dire+'/streamband.jpg')
+    savefig(dire+'/streamband.png')
     close()
     vratmin=0.5 # 0.2
     vratmax=2.5 # 1.
@@ -509,7 +515,7 @@ def mplotter(dire,nope=False):
     fig.set_size_inches(5*2+1, 5*2*hdisk+1.5)
     fig.tight_layout(pad=0.5)
     savefig(dire+'/streamband_mag.eps')
-    savefig(dire+'/streamband_mag.jpg')
+    savefig(dire+'/streamband_mag.png')
     close()
 
     # vertical slice:
@@ -540,7 +546,8 @@ def mplotter(dire,nope=False):
     ylim(0.,1.)
     fig.set_size_inches(8, 6)
     fig.tight_layout(pad=1.0,h_pad=0.5, w_pad=0.5)
-    savefig('/home/pasha/harm/harmpi/'+dire+'/vverts.eps')
+    savefig(dire+'/vverts.eps')
+    savefig(dire+'/vverts.png')
     close()
     clf()
     contourf(r2*sin(h2), r2*cos(h2), uh,levels=vlevs,norm=norm)
@@ -716,9 +723,10 @@ def mplotter(dire,nope=False):
         xlabel(r'$\cos \theta$')
         ylabel(r'$\Delta_{ik} / \Delta_{\rm tot}$')
         savefig(dire+'/dmatrix_thslice.eps')
-
+    close('all')
+        
 # reading R\Theta file in ascii ; plotting the results of framerip
-def ascframe(prefix='dumps/dump000', xmax=20.):
+def ascframe(prefix='dumps/dump000', xmax=40.):
 
     rfile=prefix+'_r.dat'
     hfile=prefix+'_h.dat'
@@ -932,7 +940,7 @@ def ascframe(prefix='dumps/dump000', xmax=20.):
     close()
 
 # reading R\Phi file in ascii 
-def eqframe(prefix):
+def eqframe(prefix, xmax=40.):
 
     rfile=prefix+'_eq_r.dat'
     phifile=prefix+'_eq_phi.dat'
@@ -1018,8 +1026,8 @@ def eqframe(prefix):
     clf()
     fig=figure()
     contourf(r2*sin(phi), r2*cos(phi), drho,levels=drholevs)
-    xlim(0.,20.)
-    ylim(-10.,10.)
+    xlim(-xmax,xmax)
+    ylim(-xmax, xmax)
     bhole(rhor)
     title('deviations from mean density profile, t='+str(t))
     #    axis('equal')
@@ -1029,8 +1037,8 @@ def eqframe(prefix):
     clf()
     contourf(r2*sin(phi), r2*cos(phi), ur*rho,nlevels=30)
     colorbar()
-    xlim(0.,20.)
-    ylim(-10.,10.)
+    xlim(-xmax,xmax)
+    ylim(-xmax,xmax)
     bhole(rhor)
     title(r'$\rho u^r$, t='+str(t))
     #    axis('equal')
@@ -1044,8 +1052,8 @@ def eqframe(prefix):
     contourf(r2*sin(phi), r2*cos(phi), log10(old_div(p,pm)),levels=betalevs)
     colorbar()
     contour(r2*sin(phi), r2*cos(phi), drho, colors='k',levels=drholevs, lineswidth=1)
-    xlim(0.,15.)
-    ylim(-5.,10.)
+    xlim(-xmax,xmax)
+    ylim(-xmax,xmax)
     bhole(rhor)
     title(r'$\lg\beta$, t='+str(t))
     #    axis('equal')
@@ -1056,7 +1064,7 @@ def eqframe(prefix):
 def dumpmovie():
     dire='dumps/'
     n1=0
-    n2=340
+    n2=256
     for k in n1+arange(n2-n1+1):
         prefix=dire+rk.dumpname(k)
         print(prefix)
