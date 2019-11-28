@@ -132,8 +132,8 @@
 #define PERIODIC (0)          /* whether or not to use periodic boundary conditions */
 #define OUTFLOW  (0)          /* whether or not to use outflow boundary conditions in all directions */
 #elif WHICHPROBLEM == AMIRSOURCE
-#define N1       (256)         /* number of physical zones in X1-direction */
-#define N2       (128)          /* number of physical zones in X2-direction */
+#define N1       (128)         /* number of physical zones in X1-direction */
+#define N2       (64)          /* number of physical zones in X2-direction */
 #define N3       (1)          /* number of physical zones in X3-direction */
 #define GR       (1)          /* whether or not to use GR */
 #define BL       (1)          /* whether or not to use BL coords */
@@ -697,6 +697,10 @@ void get_rho_u_floor( double r, double th, double phi, double *rho_floor, double
 void init_entropy();
 void compute_ktot(double pi[][N2M][N3M][NPR],double prh[][N2M][N3M][NPR], double pr[][N2M][N3M][NPR], int i, int j, int k, double Dt, int was_floor_activated, int is_after_fixup);
 
+// calculates Keplerian rotation profile (correct results in the eqplane only!)
+void Keplercalc(double *ucon, double *ucov, int ii, int jj, int kk);
+// general conversion between BL and internal 4-velocities
+void convert_u4(double *ucon, double *ucov, int ii, int jj, int kk);
 
 extern double tdump,trdump,timage,tlog ;
 
@@ -719,3 +723,5 @@ extern double global_x20;
 extern double global_kappa;
 extern double aphipow;
 
+// Keplerian velocity field:
+extern double uconK[N1M][N2M][N3M][NDIM], ucovK[N1M][N2M][N3M][NDIM];

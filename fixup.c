@@ -134,16 +134,18 @@ void fixup1zone( int i, int j, int k, double pv[NPR] )
 
   dofloor = 0;
   /* floor on density and internal energy density (momentum *not* conserved) */
-    if(pv[RHO] < rhoflr ){
-        pv[RHO] = rhoflr;
-        dofloor = 1;
-    }
+  if(pv[RHO] < rhoflr ){
+    pv[RHO] = rhoflr;
+    pv[OR] = rhoflr * r;
+    pv[OH] = rhoflr * th;
+    pv[OP] = rhoflr * phi;
+    dofloor = 1;
+  }
   
-    if(pv[UU]  < uuflr  )   {
-      
-        pv[UU]  = uuflr;
-        dofloor = 1;
-    }
+  if(pv[UU]  < uuflr  )   {
+    pv[UU]  = uuflr;
+    dofloor = 1;
+  }
 
 #if( DRIFT_FLOOR )
   if(dofloor && (trans=10.*bsq/MY_MIN(pv[RHO],pv[UU])-1.) > 0. ) {

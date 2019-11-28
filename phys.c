@@ -192,7 +192,6 @@ void ucon_to_utcon(double *ucon,struct of_geom *geom, double *utcon)
   alpha = 1./sqrt(-geom->gcon[TT][TT]) ;
   SLOOPA beta[j] = geom->gcon[TT][j]*alpha*alpha ;
   gamma = alpha*ucon[TT] ;
-  
  
   utcon[0] = 0;
   SLOOPA utcon[j] = ucon[j] + gamma*beta[j]/alpha ;
@@ -378,7 +377,6 @@ void vchar(double *pr, struct of_state *q, struct of_geom *geom, int js,
   return ;
 }
 
-
 /* Add any additional source terms (e.g. cooling functions) */
 
 /* void misc_source(double *ph, double *phxp1, double *phxm1, double *phyp1, double *phym1,int ii, int jj, int kk, struct of_geom *geom, struct of_state *q, double *dU, double Dt) */
@@ -402,36 +400,66 @@ void misc_source(double *ph, int ii, int jj, int kk, struct of_geom *geom, struc
 #endif
 
 #if WHICHPROBLEM == AMIRSOURCE
-  double rsource = 25., sigmar = 2., mdot = 1e-4 ; 
-  double r, th, phi, x, drho = 0., mu0 =  1.0;
+  double rsource = 25., sigmar = 1., m_dot = 1.e-2 ; 
+  double r, th, phi, x, drho = 0., mu0 =  1.001, xrel;
   double risco();
 
   get_phys_coord(ii,jj,kk,&r,&th,&phi) ;
-  x=(r-rsource)/sigmar ;
-  if((x<10.) && (r>risco())){
-    double udK[4]; // covariant Keplerian components in the eqplane
-
-    udK_calc(udK, r, geom);
-    
-    drho = exp(-x*x/2.) * mdot /(2.*MPI*MPI * rsource * sigmar*sigmar );
-    dU[RHO] += drho;
-    dU[U3] += drho * udK[3];
-    dU[UU] += drho * udK[0]*mu0;
-  }
+  xrel=(r-rsource)/sigmar ;
+  if(((xrel*xrel)<10.) && (r>risco()))
+    {    
+      drho = exp(-xrel*xrel/2.) * m_dot /(2.*M_PI*M_PI * rsource * sigmar*sigmar );
+      dU[RHO] += drho;
+      dU[OR] += drho * r;     dU[OH] += drho * th;   dU[OP] += drho * phi; 
+      dU[U3] += drho * ucovK[ii][jj][kk][U3] ;
+      dU[UU] += drho * mu0;
+    }
 #endif
 }
   
 ////////////////////////////////////////////////////
-void udK_calc(double *ud, double r, struct of_geom *geom)
-{
-  /* calculates 4-velocity components for Keplerian flow in the equatorial plane */
-  double rsq = r*r, rroot = sqrt(r), asq = a*a;
-  double omegaK = 1./(r*sqrt(r)+a), lK = (rsq - 2.*a*rroot+asq)/((r-2.)*rroot+a);
-  ud[0] = 1./sqrt(-(geom->gcon[0][0]+ 2.*omegaK * geom->gcon[0][1] + omegaK*omegaK * geom->gcon[1][1]));
-  ud[1] = 0. ; ud[2] = 0.; 
-  ud[3] = ud[0] * lK;
 
-  return;
+void convert_u4(double *ucon, double *ucov, int ii, int jj, int kk)
+{
+  // general conversion between covariant/contravariant and internal velocities
+  double X[NDIM], trans[NDIM][NDIM],tmp[NDIM], uconp[4], utconp[4], dxdxp[NDIM][NDIM], dxpdx[NDIM][NDIM] ;
+  double r, th, phi;
+  /* transform to Kerr-Schild */
+  /* make transform matrix */
+  struct of_geom geom ;
+  int i,j,k;
+  coord(ii,jj,kk,CENT,X) ;// internal coordinates X 
+  bl_coord(X,&r,&th,&phi) ; // Boyer-Lindquist coordinates
+  blgset(ii,jj,kk,&geom) ; // geometry
+  
+  DLOOP trans[j][k] = 0. ;
+  DLOOPA trans[j][j] = 1. ;
+  trans[0][1] = 2.*r/(r*r - 2.*r + a*a) ;
+  trans[3][1] = a/(r*r - 2.*r + a*a) ;
+  /* transform ucon */
+  DLOOPA tmp[j] = 0. ;
+  DLOOP tmp[j] += trans[j][k]*ucon[k] ;
+  DLOOPA ucon[j] = tmp[j] ;
+  /* now we've got ucon in KS coords */
+  /* transform to KS' coords */
+  /* dr^\mu/dx^\nu jacobian, where x^\nu are internal coords */
+  dxdxp_func(X, dxdxp);
+  /* dx^\mu/dr^\nu jacobian */
+  invert_matrix(dxdxp, dxpdx);
+  
+  for(i=0;i<NDIM;i++) {
+    uconp[i] = 0;
+    //  ucovp[i] = 0;
+    for(j=0;j<NDIM;j++){
+      uconp[i] += dxpdx[i][j]*ucon[j];
+      //  ucovp[i] += dxdxp[i][j]*ucov[j];
+    }
+  }
+  ucon_to_utcon(uconp,&geom,utconp);
+  //  ucov_to_utcov(ucovp,&geom,utcovp);
+  DLOOPA ucon[j] = utconp[j];
+  DLOOP ucov[j] = utconp[j] * geom.gcov[j][k];
+  
 }
 
 double risco()

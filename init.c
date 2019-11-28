@@ -62,6 +62,10 @@ double compute_B_from_A( double (*A)[N2+D2][N3+D3], double (*p)[N2M][N3M][NPR] )
 double normalize_B_by_maxima_ratio(double beta_target, double (*p)[N2M][N3M][NPR], double *norm_value);
 double normalize_B_by_beta(double beta_target, double (*p)[N2M][N3M][NPR], double rmax, double *norm_value);
 double aphiloop(double varpi, double z, double varpi0, double z0);
+// calculates Keplerian rotation profile (correct results in the eqplane only!)
+void Keplercalc(double *ucon, double *ucov, int ii, int jj, int kk);
+// general conversion between BL and internal 4-velocities
+void convert_u4(double *ucon, double *ucov, int ii, int jj, int kk);
 
 /////////////////////
 //magnetic field geometry and normalization
@@ -89,6 +93,8 @@ double aphiloop(double varpi, double z, double varpi0, double z0);
 
 double rmax = 0.;
 double rhomax = 1.;
+
+double uconK[N1M][N2M][N3M][4], ucovK[N1M][N2M][N3M][4];
 
 void init()
 {
@@ -127,7 +133,7 @@ void init()
 
 void init_torus()
 {
-  int i,j,k ;
+  int i,j,k, m ;
   double r,th,phi,sth,cth ;
   double ur,uh,up,u,rho ;
   double X[NDIM] ;
@@ -144,6 +150,9 @@ void init_torus()
   double rho_av,umax,beta,bsq_ij,bsq_max,norm,q,beta_act ;
   double lfish_calc(double rmax) ;
 
+  /* Keplerian velocity field: */
+  double ucontmp[4], ucovtmp[4];
+  
   int nloops=0; /* number of loops; nloops=0 reproduces the default behaviour  */
   int evenloops=0;
   int kloop;
@@ -166,7 +175,7 @@ void init_torus()
   l = lfish_calc(rmax) ;
 
   kappa =1.e-3;
-  beta = 100. ;
+  beta = 10000. ;
 
   /* some numerical parameters */
   lim = MC ;
@@ -302,7 +311,6 @@ void init_torus()
         else
           lnh = 1. ;
 
-
         /* regions outside torus */
         if(lnh < 0. || r < rin) {
           //reset density and internal energy to zero outside torus
@@ -369,7 +377,13 @@ void init_torus()
         p[i][j][k][B3] = 0. ;
 	p[i][j][k][OR] = rho * r ; 
 	p[i][j][k][OH] = rho * th ; 
-	p[i][j][k][OP] = rho * phi; 
+	p[i][j][k][OP] = rho * phi;
+	Keplercalc(ucontmp, ucovtmp, i, j, k);
+	for (m = 0 ; m<4; m++)
+	  {
+	    uconK[i][j][k][m] = ucontmp[m] ; 
+	    ucovK[i][j][k][m] = ucovtmp[m] ;
+	  }
       }
     }
   }
@@ -1358,7 +1372,6 @@ void coord_transform(double *pr,int ii, int jj, int kk)
   /* done! */
 }
 
-
 double lfish_calc(double r)
 {
 	return(
@@ -1380,29 +1393,28 @@ double aphiloop(double varpi, double z,  double varpi0, double z0)
   return( sqrt(varpi0/varpi) * ((2./kk-kk)*Kint-2./kk*Eint) * sqrt(d2/(1.+d2*d2)));
 
 }
-/*
-void aphiloop(double (*A)[N2+D2][N3+D3], double varpi0, double z0)
+
+void Keplercalc(double *ucon, double *ucov, int ii, int jj, int kk)
 {
-  int i, j, k;
-  double kk, Kint, Eint, d2;
-  double r,th,phi,sth,cth, rho_av, q, varpi, z;
-  double X[NDIM] ;
-  struct of_geom geom ;
-  ZLOOP {
-    //    get_geometry(i,j,k,CENT,&geom) ;
-    coord(i,j,k,CORN,X) ;
-    bl_coord(X,&r,&th,&phi) ;
-    rho_av = 0.25*(
-		   p[i][j][k][RHO] +
-		   p[i-1][j][k][RHO] +
-		   p[i][j-1][k][RHO] +
-		   p[i-1][j-1][k][RHO]) ;
-    q = pow(rho_av/rhomax, gam) ;
-    varpi=r*sin(th); z=r*cos(th);
-    kk=2.*sqrt(varpi0*varpi/((varpi+varpi0)*(varpi+varpi0)+(z-z0)*(z-z0)));
-    Kint=gsl_sf_ellint_Kcomp(k, 0); Eint=gsl_sf_ellint_Ecomp(k, 0);
-    d2=(varpi-varpi0)*(varpi-varpi0)+(z-z0)*(z-z0);
-    A[i][j][k]+=q * sqrt(varpi0/varpi) * ((2./k-k)*Kint-2./k*Eint) * sqrt(d2/(1.+d2*d2));
-  }
-}
+  /* calculates 4-velocity components for Keplerian flow in the equatorial plane 
+it also returns something outside the plane, but the results are questionable
 */
+  int k, j;
+  double r,th,phi,rsq = r*r, rroot = sqrt(r), asq = a*a;
+  double omegaK = 1./(r*sqrt(r)+a), lK = (rsq - 2.*a*rroot+asq)/((r-2.)*rroot+a);
+  double X[NDIM];
+  struct of_geom geom ;
+  coord(ii,jj,kk,CENT,X) ;// internal coordinates X 
+  bl_coord(X,&r,&th,&phi) ; // Boyer-Lindquist coordinates
+  blgset(ii,jj,kk,&geom) ; // geometry
+
+  ucon[TT] = 1./sqrt(-(geom.gcov[0][0]+ 2.*omegaK * geom.gcov[0][3] + omegaK*omegaK * geom.gcov[3][3]));
+  ucon[RR] = 0. ; ucon[TH] = 0.; 
+  ucon[PH] = ucon[TT] * omegaK;
+
+  DLOOP ucov[j] = geom.gcov[j][k] * ucon[k];
+
+  convert_u4(ucon, ucov, ii, jj, kk);
+  
+  return;
+}

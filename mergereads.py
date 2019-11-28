@@ -1064,7 +1064,7 @@ def eqframe(prefix, xmax=40.):
 def dumpmovie():
     dire='dumps/'
     n1=0
-    n2=256
+    n2=20
     for k in n1+arange(n2-n1+1):
         prefix=dire+rk.dumpname(k)
         print(prefix)

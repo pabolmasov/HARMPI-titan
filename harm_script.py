@@ -633,7 +633,7 @@ def origin_plot(dumpn, xmax=30.):
     plt.close()
     plt.clf()
     plt.plot(np.squeeze(r), np.squeeze(r), 'r')
-    plt.plot(np.squeeze(r), np.squeeze(origin_r), '.k')
+    plt.plot(r[rho>0.1], origin_r[rho>0.1], '.k')
     plt.xlim(0., xmax) ; plt.ylim(0., xmax)
     plt.savefig("oritest.png")
     plt.close()
