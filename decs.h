@@ -81,7 +81,7 @@
 #define IC_TORUS 9
 #define AMIRSOURCE 10
 
-#define WHICHPROBLEM AMIRSOURCE
+#define WHICHPROBLEM TORUS_PROBLEM
 #define DOKTOT   0
 
 /** here are the few things that we change frequently **/
@@ -114,8 +114,8 @@
 #define PERIODIC (0)          /* whether or not to use periodic boundary conditions */
 #define OUTFLOW  (0)          /* whether or not to use outflow boundary conditions in all directions */
 #elif WHICHPROBLEM == TORUS_PROBLEM
-#define N1       (128)         /* number of physical zones in X1-direction */  //change back to 256x256
-#define N2       (128)         /* number of physical zones in X2-direction */
+#define N1       (256)         /* number of physical zones in X1-direction */  //change back to 256x256
+#define N2       (256)         /* number of physical zones in X2-direction */
 #define N3       (1)          /* number of physical zones in X3-direction */
 #define GR       (1)          /* whether or not to use GR */
 #define BL       (1)          /* whether or not to use BL coords */

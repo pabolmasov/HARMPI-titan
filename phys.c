@@ -411,7 +411,7 @@ void misc_source(double *ph, int ii, int jj, int kk, struct of_geom *geom, struc
       drho = exp(-xrel*xrel/2.) * m_dot /(2.*M_PI*M_PI * rsource * sigmar*sigmar );
       dU[RHO] += drho;
       dU[OR] += drho * r;     dU[OH] += drho * th;   dU[OP] += drho * phi; 
-      dU[U3] += drho * ucovK[ii][jj][kk][U3] ;
+      dU[U3] += drho * uconK[ii][jj][kk][U3];
       dU[UU] += drho * mu0;
     }
 #endif

@@ -144,16 +144,19 @@ void init_torus()
   double l,rin,lnh,expm2chi,up1 ;
   double DD,AA,SS,thin,sthin,cthin,DDin,AAin,SSin ;
   double kappa,hm1 ;
+  double routfish, rinfish ;
 
   /* for magnetic field */
   double A[N1+D1][N2+D2][N3+D3] ;
+  double rhocutoff = 0.2 ; // relative density below which there is no magnetic field 
   double rho_av,umax,beta,bsq_ij,bsq_max,norm,q,beta_act ;
   double lfish_calc(double rmax) ;
 
   /* Keplerian velocity field: */
   double ucontmp[4], ucovtmp[4];
   
-  int nloops=0; /* number of loops; nloops=0 reproduces the default behaviour  */
+  int nloops=5; /* number of loops; nloops=0 reproduces the default behaviour  */
+  double rnorm, modulator;
   int evenloops=0;
   int kloop;
   double zloop, rloop, aplus;
@@ -370,7 +373,8 @@ void init_torus()
 
           /* convert from 4-vel in BL coords to relative 4-vel in code coords */
           coord_transform(p[i][j][k],i,j,k) ;
-        }
+
+	}
 
         p[i][j][k][B1] = 0. ;
         p[i][j][k][B2] = 0. ;
@@ -393,7 +397,8 @@ void init_torus()
   MPI_Allreduce(MPI_IN_PLACE,&rhomax,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
   MPI_Allreduce(MPI_IN_PLACE,&umax,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
 #endif
-  
+
+  routfish = 0.; rinfish = Rout ; 
   /* Normalize the densities so that max(rho) = 1 */
   if(MASTER==mpi_rank) fprintf(stderr,"rhomax: %g\n",rhomax) ;
   ZSLOOP(0,N1-1,0,N2-1,0,N3-1) {
@@ -402,6 +407,12 @@ void init_torus()
 	  p[i][j][k][OR] /= rhomax ;
 	  p[i][j][k][OH] /= rhomax ;
 	  p[i][j][k][OP] /= rhomax ;
+	  if(p[i][j][k][RHO]>rhocutoff)
+	    {
+	      get_phys_coord(i,j,k,&r,&th,&phi) ;
+	      if(r > routfish) routfish = r; // maximal radius in the torus
+	      if(r < rinfish) rinfish = r; // maximal radius in the torus
+	    }
   }
   umax /= rhomax ;
   kappa *= pow(rhomax,gam-1);
@@ -417,29 +428,38 @@ void init_torus()
     fprintf(stderr, "Unknown field type: %d\n", (int)WHICHFIELD);
     exit(321);
   }
-
+  
   /* first find corner-centered vector potential */
   ZSLOOP(0,N1-1+D1,0,N2-1+D2,0,N3-1+D3) A[i][j][k] = 0. ;
-  if(nloops<1)
-    {
-      ZSLOOP(0,N1-1+D1,0,N2-1+D2,0,N3-1+D3) {
-      //cannot use get_phys_coords() here because it can only provide coords at CENT
-	coord(i,j,k,CORN,X) ;
-	bl_coord(X,&r,&th,&phi) ;
-      
-	rho_av = 0.25*(
-		       p[i][j][k][RHO] +
-		       p[i-1][j][k][RHO] +
-		       p[i][j-1][k][RHO] +
-		       p[i-1][j-1][k][RHO]) ;
-	
-	q = pow(r,aphipow)*rho_av/rhomax ;
-	if (WHICHFIELD == NORMALFIELD) {
-	  q -= 0.2;
-	}
-	if(q > 0.) A[i][j][k] = q ;
-      }
+  ZSLOOP(0,N1-1+D1,0,N2-1+D2,0,N3-1+D3) {
+    //cannot use get_phys_coords() here because it can only provide coords at CENT
+    coord(i,j,k,CORN,X) ;
+    bl_coord(X,&r,&th,&phi) ;
+    
+    rho_av = 0.25*(
+		   p[i][j][k][RHO] +
+		   p[i-1][j][k][RHO] +
+		   p[i][j-1][k][RHO] +
+		   p[i-1][j-1][k][RHO]) ;
+    
+    q = pow(r,aphipow)*rho_av/rhomax ;
+    if (WHICHFIELD == NORMALFIELD) {
+      q -= rhocutoff;
     }
+    if(nloops >=1)
+      {
+	//	fprintf(stderr, "Nloops = %d\n", nloops);
+	rnorm = (r/rinfish-1.) / (routfish/rinfish -1. );
+	modulator = sin(M_PI * rnorm*(double)nloops);
+	//	getchar();
+      }
+    else{
+      modulator = 1.;
+    }
+    if(q > 0.) A[i][j][k] = q * modulator ;
+  }
+
+#if (0) // random loops
   if(nloops>=1){
     for(kloop=0; kloop<nloops; kloop++){
       rloop=(double)rand()/(double)RAND_MAX; zloop=(double)rand()/(double)RAND_MAX;
@@ -458,8 +478,8 @@ void init_torus()
 	A[i][j][k]+=q*aplus * pow(rho_av/rhomax, gam);
       }
     }
-  }
-  fixup(p) ;
+#endif
+    fixup(p) ;
 
   /* now differentiate to find cell-centered B,
      and begin normalization */
