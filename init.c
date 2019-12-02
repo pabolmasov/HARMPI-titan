@@ -414,6 +414,11 @@ void init_torus()
 	      if(r < rinfish) rinfish = r; // maximal radius in the torus
 	    }
   }
+#ifdef MPI
+  //exchange the info between the MPI processes to get the true max/min
+  MPI_Allreduce(MPI_IN_PLACE,&routfish,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
+  MPI_Allreduce(MPI_IN_PLACE,&rinfish,1,MPI_DOUBLE,MPI_MIN,MPI_COMM_WORLD);
+#endif
   umax /= rhomax ;
   kappa *= pow(rhomax,gam-1);
   global_kappa = kappa;
