@@ -683,7 +683,7 @@ def defaultrun():
     print(flist)
     for k in arange(nlist):
         dumpinfo("../"+flist[k])
-        framerip("../"+flist[k], alifactor=3)
+        framerip("../"+flist[k], alifactor=1)
         maccre, mwind, laccre, lwind = mint(rref)
         fromabove("../"+flist[k], alifactor=3)
         print("merger_remote defaultrun: reducing "+str(flist[k]))

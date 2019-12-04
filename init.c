@@ -101,6 +101,7 @@ void init()
   void init_bondi(void);
   void init_torus(void);
   void init_sndwave(void);
+  void init_vtest(void);
   void init_entwave(void);
   void init_monopole(double Rout_val);
 
@@ -122,6 +123,9 @@ void init()
     break ;
   case ENTWAVE_TEST :
     init_entwave() ;
+    break ;
+  case CONSTVTEST :
+    init_vtest() ;
     break ;
   case BONDI_PROBLEM_1D:
   case BONDI_PROBLEM_2D:
@@ -379,9 +383,9 @@ void init_torus()
         p[i][j][k][B1] = 0. ;
         p[i][j][k][B2] = 0. ;
         p[i][j][k][B3] = 0. ;
-	p[i][j][k][OR] = rho * r ; 
-	p[i][j][k][OH] = rho * th ; 
-	p[i][j][k][OP] = rho * phi;
+	p[i][j][k][OR] = r ; 
+	p[i][j][k][OH] = th ; 
+	p[i][j][k][OP] = phi;
 	Keplercalc(ucontmp, ucovtmp, i, j, k);
 	for (m = 0 ; m<4; m++)
 	  {
@@ -819,7 +823,7 @@ void init_bondi()
 		  p[i][j][k][U3] = up ;
 		  
 		  /* convert from 4-vel to 3-vel */
-		  coord_transform(p[i][j][k],i,j,k) ;
+		  //		  coord_transform(p[i][j][k],i,j,k) ;
 		}
 
 		p[i][j][k][B1] = 0. ;
@@ -1196,6 +1200,9 @@ void init_entwave()
     p[i][j][k][B1] = 0. ;
     p[i][j][k][B2] = 0. ;
     p[i][j][k][B3] = 0. ;
+    p[i][j][k][OR] = x * p[i][j][k][RHO] ; 
+    p[i][j][k][OH] = y * p[i][j][k][RHO] ; 
+    p[i][j][k][OP] = z * p[i][j][k][RHO] ; 
   }
   
   /* enforce boundary conditions */
@@ -1231,7 +1238,7 @@ void init_sndwave()
   double k_vec_y = 0;
   double k_vec_len = sqrt( k_vec_x * k_vec_x + k_vec_y * k_vec_y );
   double tfac = 1e4; //factor by which to reduce velocity
-  
+  double V0 =0.01;  
   
   /* some physics parameters */
   gam = 5./3. ;
@@ -1291,12 +1298,15 @@ void init_sndwave()
     
     p[i][j][k][RHO] = myrho + delta_rho;
     p[i][j][k][UU] = (myu + gam * myu * delta_rho / myrho)/(tfac*tfac);
-    p[i][j][k][U1] = (delta_rho/myrho * mycs * k_vec_x / k_vec_len)/tfac;
+    p[i][j][k][U1] = (delta_rho/myrho * mycs * k_vec_x / k_vec_len)/tfac - V0;
     p[i][j][k][U2] = (delta_rho/myrho * mycs * k_vec_y / k_vec_len)/tfac;
     p[i][j][k][U3] = 0 ;
     p[i][j][k][B1] = 0. ;
     p[i][j][k][B2] = 0. ;
     p[i][j][k][B3] = 0. ;
+    p[i][j][k][OR] = x * p[i][j][k][RHO] ; 
+    p[i][j][k][OH] = y * p[i][j][k][RHO] ; 
+    p[i][j][k][OP] = z * p[i][j][k][RHO] ; 
   }
   
   /* enforce boundary conditions */
@@ -1307,6 +1317,101 @@ void init_sndwave()
   
   
   
+  
+  
+#if( DO_FONT_FIX )
+  set_Katm();
+#endif
+  
+  
+}
+void init_vtest()
+{
+  int i,j,k ;
+  double x,y,z,sth,cth ;
+  double ur,uh,up,u,rho ;
+  double X[NDIM] ;
+  struct of_geom geom ;
+  
+  double myrho, myu, mycs, myv;
+  double delta_rho, delta_ampl=.01;
+  double V0 =.01;  
+  
+  /* some physical parameters */
+  gam = 5./3. ;
+  
+  /* some numerical parameters */
+  lim = VANL ;
+  failed = 0 ;	/* start slow */
+  cour = 0.9 ;
+  dt = 1.e-5 ;
+  
+  t = 0. ;
+  hslope = 1. ;
+  
+  if(N2!=1) {
+    //2D problem, use full pi-wedge in theta
+    fractheta = 1.;
+  }
+  else{
+    //1D problem (since only 1 cell in theta-direction), use a restricted theta-wedge
+    fractheta = 1.e-2;
+  }
+  
+  fracphi = 1.;
+  
+  set_arrays() ;
+  set_grid() ;
+  
+  myrho = 1.;
+  myu = myrho / (gam * (gam-1));  //so that mycs is unity
+  
+  mycs = sqrt(gam * (gam-1) * myu / myrho);  //background sound speed
+  
+  /* output choices */
+  
+  tf = 1./V0;
+  
+  DTd = tf/10. ;	/* dumping frequency, in units of M */
+  DTl = tf/10. ;	/* logfile frequency, in units of M */
+  DTi = tf/10. ; 	/* image file frequ., in units of M */
+  DTr = tf/10. ; /* restart file frequ., in units of M */
+  DTr01 = 1000 ; /* restart file frequ., in timesteps */
+  
+  /* start diagnostic counters */
+  dump_cnt = 0 ;
+  image_cnt = 0 ;
+  rdump_cnt = 0 ;
+  rdump01_cnt = 0 ;
+  defcon = 1. ;
+
+  double gausshape;
+  
+  ZSLOOP(0,N1-1,0,N2-1,0,N3-1) {
+    coord(i,j,k,CENT,X) ;
+    bl_coord(X,&x,&y,&z) ;
+    
+    gausshape =  exp(-(x-0.5)*(x-0.5)*40.) ; 
+    delta_rho = delta_ampl * myrho * gausshape;
+    p[i][j][k][RHO] = myrho +delta_rho ;
+    p[i][j][k][UU] = myu ;
+    p[i][j][k][U1] = V0;
+    p[i][j][k][U2] = 0.;
+    p[i][j][k][U3] = 0. ;
+    p[i][j][k][B1] = 0. ;
+    p[i][j][k][B2] = 0. ;
+    p[i][j][k][B3] = 0. ;
+    p[i][j][k][OR] = x ; 
+    p[i][j][k][OH] = y  ; 
+    p[i][j][k][OP] = z ; 
+  }
+  
+  /* enforce boundary conditions */
+  
+  
+  fixup(p) ;
+  bound_prim(p) ;
+ 
   
   
 #if( DO_FONT_FIX )

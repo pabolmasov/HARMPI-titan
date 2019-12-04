@@ -374,7 +374,7 @@ def mplotter(dire='.',nope=False):
     savefig(dire+'/rho.eps')
     savefig(dire+'/rho.png')
     # beta magnetization plot:
-    beta1=0.1 ; beta2=100. ; nbeta=30
+    beta1=0.1 ; beta2=1000. ; nbeta=30
     betalevs=log10((old_div(beta2,beta1))**(old_div(arange(nbeta),double(nbeta-1)))*beta1)
     clf()
     contourf(r2*sin(h2), r2*cos(h2), log10(old_div(p,pm)),levels=betalevs)
@@ -851,7 +851,8 @@ def ascframe(prefix='dumps/dump000', xmax=40.):
     nxx=10
     rlevs=xmax*np.arange(nxx)/np.double(nxx) ; thlevs=np.pi*np.arange(nxx)/np.double(nxx)
     clf()
-    contourf(x, y, rho,cmap=cmap)
+    contourf(x, y, orr,cmap=cmap, levels=rlevs)
+    colorbar()
     contour(x, y, r2, colors='w', levels=rlevs)
     contour(x, y, h2, colors='w', levels=thlevs)
     contour(x, y, orr, colors='k', levels=rlevs)
@@ -1062,20 +1063,22 @@ def eqframe(prefix, xmax=40.):
     
 
 def dumpmovie():
-    dire='dumps/'
+    dire = 'titania/striped2D/dumps/'
     n1=0
-    n2=20
+    n2=182
     for k in n1+arange(n2-n1+1):
         prefix=dire+rk.dumpname(k)
         print(prefix)
 #        eqframe(prefix)
-        ascframe(prefix)
+        ascframe(prefix, xmax = 30.)
         
     # then: ffmpeg -framerate 15 -pattern_type glob -i 'titan2/dump???_rho.png' -b 4096k titanic2.mp4
     # ffmpeg -framerate 15 -pattern_type glob -i 'titan2/dump???_rho.png' -b 4096k titanic2_rho_1.mp4
     # ffmpeg -framerate 15 -pattern_type glob -i 'titan2/dump????_rho.png' -b 4096k titanic2_rho_2.mp4
     # ffmpeg -framerate 15 -pattern_type glob -i 'titan2/dump???_eq_beta.png' -b 4096k titanic2_beta1.mp4
     # ffmpeg -framerate 15 -pattern_type glob -i 'titan2/dump????_eq_beta.png' -b 4096k titanic2_beta2.mp4
+    # ffmpeg -framerate 15 -pattern_type glob -i 'dumps/dump???_rho.png' -b 4096k titanic_rho.mp4
+
 
 # making a plot of a PDS produced by powerstack
 def readsp():

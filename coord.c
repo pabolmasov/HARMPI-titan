@@ -340,6 +340,9 @@ void rescale(double *pr, int which, int dir, int ii, int jj, int kk, int face, s
     scale[B2] = 1.0;
     scale[B3] = 1.0;
   }
+    scale[OR] = 1.0;
+    scale[OH] = 1.0;
+    scale[OP] = 1.0;
   
   if (which == FORWARD) {	// rescale before interpolation
     PLOOP pr[m] *= scale[m];

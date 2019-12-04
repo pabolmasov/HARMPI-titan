@@ -62,9 +62,9 @@ void primtoflux(double *pr, struct of_state *q, int dir,
 	/* particle number flux */
 	flux[RHO] = pr[RHO]*q->ucon[dir] ;
 	/* densities of the passive scalars we track in the simulation */
-	flux[OR] = pr[OR]*q->ucon[dir] ;
-	flux[OH] = pr[OH]*q->ucon[dir] ;
-	flux[OP] = pr[OP]*q->ucon[dir] ;
+	flux[OR] = pr[OR]*flux[RHO] ;
+	flux[OH] = pr[OH]*flux[RHO] ;
+	flux[OP] = pr[OP]*flux[RHO] ;
 
 	mhd_calc(pr, dir, q, mhd) ;
 

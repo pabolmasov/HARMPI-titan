@@ -613,34 +613,39 @@ def origin_plot(dumpn, xmax=30.):
     re.rd(filename)
     r=re.r ; h=re.h ; ph=re.ph ; rho=re.rho ; origin_r=re.origin_r; origin_th=re.origin_th
     nxx=10
-    rlevs=xmax*np.arange(nxx)/np.double(nxx) ; thlevs=np.pi*np.arange(nxx)/np.double(nxx)
+    rlevs=(r.max()/1.)**(np.arange(nxx)/np.double(nxx)) ; thlevs=np.pi*np.arange(nxx)/np.double(nxx)
     x=np.squeeze((r*sin(h))[:,:,0]) ; y=np.squeeze((r*cos(h))[:,:,0])
-    
-    plt.clf()
-    #    plco(rho, xy=1, isfilled=True)
-    #    plc(re.r, xy=1,levels=rlevs, colors='w')
-    #    plc(re.origin_r, xy=1,levels=rlevs, colors='k')
-    #    plc(re.h, xy=1,levels=rlevs, colors='w')
-    #    plc(re.origin_th, xy=1,levels=rlevs, colors='k')
-    plt.contourf(x, y, np.squeeze(rho[:,:,0]))
-    plt.contour(x, y, np.squeeze(r[:,:,0]), levels=rlevs, colors='w')
-    plt.contour(x, y, np.squeeze(origin_r[:,:,0]), levels=rlevs, colors='k')
-    plt.contour(x, y, np.squeeze(h[:,:,0]), levels=thlevs, colors='w')
-    plt.contour(x, y, np.squeeze(origin_th[:,:,0]), levels=thlevs, colors='k')
-    plt.xlim(0., xmax) ; plt.ylim(-xmax/4., xmax/2.)
-    plt.title(r"t = "+str(re.t)+" $GM/c^3$")
-    plt.savefig("dumps/"+filename+"_ori.png")
-    plt.close()
-    plt.clf()
-    plt.plot(np.squeeze(r), np.squeeze(r), 'r')
-    plt.plot(r[rho>0.1], origin_r[rho>0.1], '.k')
-    plt.xlim(0., xmax) ; plt.ylim(0., xmax)
-    plt.savefig("oritest.png")
+
+    print("R0_max = "+str(origin_r[rho>1e-6].max()))
+
+    nd = np.size(np.shape(np.squeeze(re.r)))
+    if(nd>1):
+        plt.clf()
+        plt.contourf(x, y, np.log10(np.squeeze(origin_r[:,:,0])), levels=np.log10(rlevs))
+        plt.contour(x, y, np.squeeze(rho[:,:,0]), colors='k')
+        plt.contour(x, y, np.squeeze(r[:,:,0]), levels=rlevs, colors='w')
+        plt.contour(x, y, np.squeeze(h[:,:,0]), levels=thlevs, colors='w')
+        #    plt.contour(x, y, np.squeeze(origin_th[:,:,0]), levels=thlevs, colors='k')
+        plt.xlim(0., xmax) ; plt.ylim(-xmax/4., xmax/2.)
+        plt.title(r"t = "+str(re.t)+" $GM/c^3$")
+        plt.savefig("dumps/"+filename+"_ori.png")
+        plt.close()
+        plt.clf()
+        plt.plot(np.squeeze(r), np.squeeze(r), 'r')
+        plt.plot(r[rho>0.1], origin_r[rho>0.1], '.k')
+        plt.xlim(0., xmax) ; plt.ylim(0., xmax)
+        plt.savefig("oritest.png")
+    else:
+        plt.clf()
+        plt.plot(x, np.log10(np.squeeze(origin_r[:,:,0])), 'k-')
+        plt.plot(x, x, 'r:')
+        plt.xscale('log')   ;    plt.yscale('log')
+        plt.savefig("dumps/"+filename+"_ori.png")
     plt.close()
     
 def origins(n1, n2):   
     for k in np.arange(n2-n1)+n1:
-        origin_plot(k, xmax=30.)
+        origin_plot(k, xmax=60.)
 
 def tworho(n1, n2):
     file1=re.dumpname(n1) ; file2=re.dumpname(n2)
@@ -663,6 +668,21 @@ def tworho(n1, n2):
     plt.xlim(0., xmax) ; plt.ylim(-xmax/4., xmax/2.)
     plt.savefig("rhotest.png")
     plt.close()
+
+def test1d(n1, n2):
+    re.rg("gdump.back") 
+
+    ndump = np.arange(n2-n1)+n1
+
+    plt.clf()
+    for kdump in ndump:
+        re.rd(re.dumpname(kdump))
+        plt.plot(np.squeeze(re.r), np.squeeze(re.origin_r), label=str(kdump))
+        # plt.plot(np.squeeze(re.r), np.squeeze(re.rho), label=str(kdump))
+        #   plt.yscale('log')
+    plt.legend()
+    plt.savefig("rhotest.png")
     
+  
 # ffmpeg -f image2 -r 15 -pattern_type glob -i 'dumps/dump*.png' -pix_fmt yuv420p -b 4096k orimovie.mp4
 

@@ -155,7 +155,7 @@ void bound_x1up(double prim[][N2M][N3M][NPR] )
       for (iNg= 0; iNg<N1G+1; iNg++) //!!!ATCH: added +1 to N1G to ensure that all ghost cells are looped over
       {
         get_geometry(N1-1+iNg,j,k,CENT,&geom) ;
-        rescale(prim[N1-1+iNg][j][k],REVERSE, 1, N1-1+iNG,j,k,CENT,&geom) ;
+        rescale(prim[N1-1+iNg][j][k],REVERSE, 1, N1-1+iNg,j,k,CENT,&geom) ;
       }
 #endif
     }

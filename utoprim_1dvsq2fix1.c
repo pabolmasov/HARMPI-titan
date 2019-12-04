@@ -162,8 +162,9 @@ int Utoprim_1dvsq2fix1(FTYPE U[NPR], FTYPE gcov[NDIM][NDIM], FTYPE gcon[NDIM][ND
   /* Transform the CONSERVED variables into the new system */
   U_tmp[RHO] = alpha * U[RHO] / gdet;
   U_tmp[UU]  = alpha * (U[UU] - U[RHO])  / gdet ;
-
-
+  prim[OR] = U[OR]/U[RHO];
+  prim[OH] = U[OH]/U[RHO];
+  prim[OP] = U[OP]/U[RHO];
     
   for( i = UTCON1; i <= UTCON3; i++ ) {
     U_tmp[i] = alpha * U[i] / gdet ;
@@ -353,6 +354,9 @@ static int Utoprim_new_body(FTYPE U[NPR], FTYPE gcov[NDIM][NDIM],
     
     prim[RHO] = rho0 ;
     prim[UU] = u ;
+  prim[OR] = U[OR]/U[RHO];
+  prim[OH] = U[OH]/U[RHO];
+  prim[OP] = U[OP]/U[RHO];
     
   for(i=1;i<4;i++)  Qtcon[i] = Qcon[i] + ncon[i] * Qdotn;
   for(i=1;i<4;i++) prim[UTCON1+i-1] = gamma/(W+Bsq) * ( Qtcon[i] + QdotB*Bcon[i]/W ) ;

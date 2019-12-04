@@ -361,9 +361,9 @@ def dump_assign(gd,**kwargs):
     B=np.zeros_like(gd[0:4])
     vu[1:4] = gd[n:n+3]; n+=3
     B[1:4] = gd[n:n+3]; n+=3
-    origin_r = gd[n]/rho ; n+=1
-    origin_th = gd[n]/rho ; n+=1
-    origin_phi = gd[n]/rho ; n+=1
+    origin_r = gd[n] ; n+=1
+    origin_th = gd[n] ; n+=1
+    origin_phi = gd[n] ; n+=1
     #if total entropy equation is evolved (on by default)
     if DOKTOT == 1:
       ktot = gd[n]; n+=1
