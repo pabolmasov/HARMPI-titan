@@ -408,9 +408,6 @@ void init_torus()
   ZSLOOP(0,N1-1,0,N2-1,0,N3-1) {
           p[i][j][k][RHO] /= rhomax ;
           p[i][j][k][UU]  /= rhomax ;
-	  p[i][j][k][OR] /= rhomax ;
-	  p[i][j][k][OH] /= rhomax ;
-	  p[i][j][k][OP] /= rhomax ;
 	  if(p[i][j][k][RHO]>rhocutoff)
 	    {
 	      get_phys_coord(i,j,k,&r,&th,&phi) ;
@@ -1334,8 +1331,8 @@ void init_vtest()
   struct of_geom geom ;
   
   double myrho, myu, mycs, myv;
-  double delta_rho, delta_ampl=.01;
-  double V0 =.01;  
+  double delta_rho, delta_ampl=.001;
+  double V0 =1.;  
   
   /* some physical parameters */
   gam = 5./3. ;
@@ -1393,7 +1390,7 @@ void init_vtest()
     
     gausshape =  exp(-(x-0.5)*(x-0.5)*40.) ; 
     delta_rho = delta_ampl * myrho * gausshape;
-    p[i][j][k][RHO] = myrho +delta_rho ;
+    p[i][j][k][RHO] = myrho ; //+delta_rho ;
     p[i][j][k][UU] = myu ;
     p[i][j][k][U1] = V0;
     p[i][j][k][U2] = 0.;
