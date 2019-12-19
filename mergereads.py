@@ -860,13 +860,14 @@ def ascframe(prefix='dumps/dump000', xmax=40.):
     plt.xlim(0., xmax) ; plt.ylim(-xmax/4., xmax/2.)
     plt.savefig(prefix+"_ori.png")
     close()
-    lmin=0.
-    lmax=3.
+    lmin=-2.
+    lmax=5.
     lbetalevs=(lmax-lmin)*arange(ono)/double(ono)+lmin
     norm = BoundaryNorm(lbetalevs, ncolors=cmap.N, clip=True)
     clf()
     fig=figure()
-    contourf(r2*sin(h2), r2*cos(h2), log10(old_div(p,pm)),levels=lbetalevs,norm=norm,cmap=cmap)
+    contourf(r2*sin(h2), r2*cos(h2), log10(p/pm),levels=lbetalevs,norm=norm,cmap=cmap)
+    colorbar()
     contour(r2*sin(h2), r2*cos(h2), aphi, colors='k')
     xlim(0.,xmax)
     ylim(-xmax/2.,xmax/2.)
@@ -1064,8 +1065,8 @@ def eqframe(prefix, xmax=40.):
 
 def dumpmovie():
     dire = 'titania/striped2D/dumps/'
-    n1=0
-    n2=182
+    n1=1750
+    n2=2246
     for k in n1+arange(n2-n1+1):
         prefix=dire+rk.dumpname(k)
         print(prefix)
@@ -1078,7 +1079,7 @@ def dumpmovie():
     # ffmpeg -framerate 15 -pattern_type glob -i 'titan2/dump???_eq_beta.png' -b 4096k titanic2_beta1.mp4
     # ffmpeg -framerate 15 -pattern_type glob -i 'titan2/dump????_eq_beta.png' -b 4096k titanic2_beta2.mp4
     # ffmpeg -framerate 15 -pattern_type glob -i 'dumps/dump???_rho.png' -b 4096k titanic_rho.mp4
-
+    # ffmpeg -framerate 25 -i 'dumps/dump%3d_rho.png' -i 'dumps/dump1%3d_rho.png' -b 4096k titanic_rho.mp4
 
 # making a plot of a PDS produced by powerstack
 def readsp():
@@ -1118,6 +1119,18 @@ def readsp():
     plt.yscale('log')
     plt.savefig('pdss.png')
     
+def RTread(infile = 'ljet_RT.dat'):
+    lines = loadtxt(infile)
+    ts = lines[:,0] ; rs = lines[:,1] ; f = lines[:,2]
+
+    tun = unique(ts) ; run = unique(rs)
+    nt = size(tun) ; nr = size(run)
     
-    
-    
+    f = transpose(reshape(f, [nt, nr]))
+
+    plt.clf()
+    plt.contourf(tun, run, f)
+    colorbar()
+    #    ylim(0.,1e3)
+    xlabel(r'$t$') ; ylabel(r'$r$')
+    savefig('rtread.png')

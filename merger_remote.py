@@ -32,14 +32,46 @@ def get_sorted_file_list(prefix="dump"):
         flist[k]=flist[k][:-5] # cutting off the tails
     return flist
 
+# electromagnetic field tensor
+def fFdd(i,j):
+    uu=re.uu ; ud=re.ud ; bu=re.bu ; bd=re.bd
+    gdet = re.gdet
+    if i==0 and j==1:
+        fdd =  gdet*(uu[2]*bu[3]-uu[3]*bu[2]) # f_tr
+    elif i==1 and j==0:
+        fdd = -gdet*(uu[2]*bu[3]-uu[3]*bu[2]) # -f_tr
+    elif i==0 and j==2:
+        fdd =  gdet*(uu[3]*bu[1]-uu[1]*bu[3]) # f_th
+    elif i==2 and j==0:
+        fdd = -gdet*(uu[3]*bu[1]-uu[1]*bu[3]) # -f_th
+    elif i==0 and j==3:
+        fdd =  gdet*(uu[1]*bu[2]-uu[2]*bu[1]) # f_tp
+    elif i==3 and j==0:
+        fdd = -gdet*(uu[1]*bu[2]-uu[2]*bu[1]) # -f_tp
+    elif i==1 and j==3:
+        fdd =  gdet*(uu[2]*bu[0]-uu[0]*bu[2]) # f_rp = gdet*B2
+    elif i==3 and j==1:
+        fdd = -gdet*(uu[2]*bu[0]-uu[0]*bu[2]) # -f_rp = gdet*B2
+    elif i==2 and j==3:
+        fdd =  gdet*(uu[0]*bu[1]-uu[1]*bu[0]) # f_hp = gdet*B1
+    elif i==3 and j==2:
+        fdd = -gdet*(uu[0]*bu[1]-uu[1]*bu[0]) # -f_hp = gdet*B1
+    elif i==1 and j==2:
+        fdd =  gdet*(uu[0]*bu[3]-uu[3]*bu[0]) # f_rh = gdet*B3
+    elif i==2 and j==1:
+        fdd = -gdet*(uu[0]*bu[3]-uu[3]*bu[0]) # -f_rh = gdet*B3
+    else:
+        fdd = np.zeros_like(uu[0])
+    return fdd
+
 def faraday():
     #    global re.omegaf1, re.omegaf2
     if 're.omegaf1' in globals():
         del re.omegaf1
     if 're.omemaf2' in globals():
         del re.omegaf2
-    omegaf1=old_div(re.fFdd(0,1),re.fFdd(1,3))
-    omegaf2=old_div(re.fFdd(0,2),re.fFdd(2,3))
+    omegaf1=old_div(fFdd(0,1),fFdd(1,3))
+    omegaf2=old_div(fFdd(0,2),fFdd(2,3))
     return omegaf1, omegaf2
 
 def Tcalcud():
@@ -66,6 +98,7 @@ def Tcalcud():
     enth=1+re.ug*re.gam/re.rho
     unb=enth*re.ud[0]
     isunbound=(-unb>1.0)
+    
 
 #############################################################
 # tetrad covariant components... and all the grid parameters should be set as well
@@ -107,6 +140,33 @@ def dumpinfo(prefix):
     print("time "+str(re.t))
     fout.close()
 
+def ljet(nmax):
+    # makes RT and theta-T diagrams for jet power
+
+    r1 = 100. ; r2 = 1000. 
+    
+    re.rg("gdump")
+    gdet=re.gdet ; gcov=re.gcov ; _dx2=re._dx2 ; _dx3=re._dx3
+
+    fout_RT = open("ljet_RT.dat", "w")
+    fout_thT = open("ljet_thT.dat", "w")
+
+    for k in arange(nmax):
+        fname=re.dumpname(k)
+        print("reading "+str(fname))
+        re.rd(fname)
+        faraday() # let's trust SashaTch
+        Tcalcud()
+        er = - (gdet * Tud[1,0] * _dx2 * _dx3).sum(-1).sum(-1) # theta-averaged energy flux 
+        eth = - (gdet * Tud[1,0] * _dx2 * _dx3 * (re.r > r1) * (re.r < r2)).sum(-1).sum(0) # r-averaged energy flux 
+        for kr in arange(re.nx): 
+            fout_RT.write(str(re.t)+" "+str(re.r[kr,0,0])+" "+str(er[kr])+"\n")
+        for kth in arange(re.ny):
+            fout_thT.write(str(re.t)+" "+str(re.h[0,kth,0])+" "+str(eth[kth])+"\n")
+        fout_RT.flush() ; fout_thT.flush()
+    fout_RT.close() ; fout_thT.close()
+        
+    
 # calculates and writes out evolution of some global parameters; rref is the radius at which the mass and momentum flows are calculated
 def glevol(nmax, rref):
 #    global rho, uu

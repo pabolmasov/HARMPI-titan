@@ -621,7 +621,8 @@ def origin_plot(dumpn, xmax=30.):
     nd = np.size(np.shape(np.squeeze(re.r)))
     if(nd>1):
         plt.clf()
-        plt.contourf(x, y, np.log10(np.squeeze(origin_r[:,:,0])), levels=np.log10(rlevs))
+        plt.contourf(x, y, np.log10(np.squeeze(origin_r[:,:,0]))) # , levels=np.log10(rlevs))
+        plt.colorbar()
         plt.contour(x, y, np.squeeze(rho[:,:,0]), colors='k')
         plt.contour(x, y, np.squeeze(r[:,:,0]), levels=rlevs, colors='w')
         plt.contour(x, y, np.squeeze(h[:,:,0]), levels=thlevs, colors='w')
@@ -632,7 +633,7 @@ def origin_plot(dumpn, xmax=30.):
         plt.close()
         plt.clf()
         plt.plot(np.squeeze(r), np.squeeze(r), 'r')
-        plt.plot(r[rho>0.1], origin_r[rho>0.1], '.k')
+        plt.plot(r[rho>0.1], origin_r[rho>0.1]*25., '.k')
         plt.xlim(0., xmax) ; plt.ylim(0., xmax)
         plt.savefig("oritest.png")
     else:
@@ -677,12 +678,20 @@ def test1d(n1, n2):
     plt.clf()
     for kdump in ndump:
         re.rd(re.dumpname(kdump))
+        #     plt.plot(np.squeeze(re.r), np.squeeze(re.origin_r), label=str(kdump))
+        plt.plot(np.squeeze(re.r), np.squeeze(re.rho), label=str(kdump))
+        #   plt.yscale('log')
+    plt.legend()
+    plt.savefig("rhotest.png")
+    plt.clf()
+    for kdump in ndump:
+        re.rd(re.dumpname(kdump))
         plt.plot(np.squeeze(re.r), np.squeeze(re.origin_r), label=str(kdump))
         # plt.plot(np.squeeze(re.r), np.squeeze(re.rho), label=str(kdump))
         #   plt.yscale('log')
     plt.legend()
-    plt.savefig("rhotest.png")
-    
+    plt.savefig("oritest.png")
+  
   
 # ffmpeg -f image2 -r 15 -pattern_type glob -i 'dumps/dump*.png' -pix_fmt yuv420p -b 4096k orimovie.mp4
 
