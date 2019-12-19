@@ -1126,11 +1126,28 @@ def RTread(infile = 'ljet_RT.dat'):
     tun = unique(ts) ; run = unique(rs)
     nt = size(tun) ; nr = size(run)
     
-    f = transpose(reshape(f, [nt, nr]))
+    f = reshape(f, [nt, nr])
 
     plt.clf()
-    plt.contourf(tun, run, f)
+    plt.contourf(run, tun, f)
     colorbar()
-    #    ylim(0.,1e3)
-    xlabel(r'$t$') ; ylabel(r'$r$')
+    xlim(0.,1e3)
+    ylim(100.,tun.max())
+    xlabel(r'$r$') ; xlabel(r'$r$')
     savefig('rtread.png')
+    
+def thTread(infile = 'ljet_thT.dat'):
+    lines = loadtxt(infile)
+    ts = lines[:,0] ; ths = lines[:,1] ; f = lines[:,2]
+
+    tun = unique(ts) ; thun = unique(ths)
+    nt = size(tun) ; nth = size(thun)
+    
+    f = reshape(f, [nt, nth])
+
+    plt.clf()
+    plt.contourf(thun, tun, f)
+    colorbar()
+    yscale("log")
+    ylabel(r'$t$') ; xlabel(r'$\theta$')
+    savefig('thtread.png')

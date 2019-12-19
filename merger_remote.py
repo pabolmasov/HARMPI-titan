@@ -144,11 +144,13 @@ def ljet(nmax):
     # makes RT and theta-T diagrams for jet power
 
     r1 = 100. ; r2 = 1000. 
+    theta1 = 0. ; theta2 = np.pi/4.
     
     re.rg("gdump")
     gdet=re.gdet ; gcov=re.gcov ; _dx2=re._dx2 ; _dx3=re._dx3
 
-    fout_RT = open("ljet_RT.dat", "w")
+    fout_RTN = open("ljet_RTN.dat", "w")
+    fout_RTS = open("ljet_RTS.dat", "w")
     fout_thT = open("ljet_thT.dat", "w")
 
     for k in arange(nmax):
@@ -157,14 +159,16 @@ def ljet(nmax):
         re.rd(fname)
         faraday() # let's trust SashaTch
         Tcalcud()
-        er = - (gdet * Tud[1,0] * _dx2 * _dx3).sum(-1).sum(-1) # theta-averaged energy flux 
+        erN = - (gdet * Tud[1,0] * _dx2 * _dx3 * (re.h > theta1) * (re.h < theta2)).sum(-1).sum(-1) # theta-averaged energy flux 
+        erS = - (gdet * Tud[1,0] * _dx2 * _dx3 * (re.h < (np.pi-theta1)) * (re.h < (np.pi - theta2))).sum(-1).sum(-1) # 
         eth = - (gdet * Tud[1,0] * _dx2 * _dx3 * (re.r > r1) * (re.r < r2)).sum(-1).sum(0) # r-averaged energy flux 
         for kr in arange(re.nx): 
-            fout_RT.write(str(re.t)+" "+str(re.r[kr,0,0])+" "+str(er[kr])+"\n")
+            fout_RTN.write(str(re.t)+" "+str(re.r[kr,0,0])+" "+str(erN[kr])+"\n")
+            fout_RTS.write(str(re.t)+" "+str(re.r[kr,0,0])+" "+str(erS[kr])+"\n")
         for kth in arange(re.ny):
             fout_thT.write(str(re.t)+" "+str(re.h[0,kth,0])+" "+str(eth[kth])+"\n")
-        fout_RT.flush() ; fout_thT.flush()
-    fout_RT.close() ; fout_thT.close()
+        fout_RTN.flush() ; fout_RTS.flush() ; fout_thT.flush()
+    fout_RTN.close() ; fout_RTS.close() ; fout_thT.close()
         
     
 # calculates and writes out evolution of some global parameters; rref is the radius at which the mass and momentum flows are calculated
