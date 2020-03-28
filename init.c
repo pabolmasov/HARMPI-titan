@@ -58,9 +58,9 @@
 
 void coord_transform(double *pr,int i, int j,int k) ;
 double compute_Amax( double (*A)[N2+D2][N3+D3] );
-double compute_B_from_A( double (*A)[N2+D2][N3+D3], double (*p)[N2M][N3M][NPR], double Bphiang);
+double compute_B_from_A( double (*A)[N2+D2][N3+D3], double (*p)[N2M][N3M][NPR], double *betas);
 double normalize_B_by_maxima_ratio(double beta_target, double (*p)[N2M][N3M][NPR], double *norm_value);
-double normalize_B_by_beta(double beta_target, double (*p)[N2M][N3M][NPR], double rmax, double *norm_value);
+double normalize_B_by_beta(double beta_target, double (*p)[N2M][N3M][NPR], double rmax, double *norm_value, double *betas);
 double aphiloop(double varpi, double z, double varpi0, double z0);
 // calculates Keplerian rotation profile (correct results in the eqplane only!)
 void Keplercalc(double *ucon, double *ucov, int ii, int jj, int kk);
@@ -153,13 +153,13 @@ void init_torus()
   /* for magnetic field */
   double A[N1+D1][N2+D2][N3+D3] ;
   double rhocutoff = 0.2 ; // relative density below which there is no magnetic field 
-  double rho_av,umax,beta,bsq_ij,bsq_max,norm,q,beta_act ;
+  double rho_av,umax,beta,betaphi,bsq_ij,bsq_max,norm,q,beta_act ;
   double lfish_calc(double rmax) ;
 
   /* Keplerian velocity field: */
   double ucontmp[4], ucovtmp[4];
   
-  int nloopsx=1, nloopsy=1; /* number of loops; nloops=0 reproduces the default behaviour  */
+  int nloopsx=0, nloopsy=0; /* number of loops; nloops=0 reproduces the default behaviour  */
   double rnorm, thnorm, modulator;
   int kloop;
   double zloop, rloop, aplus;
@@ -171,7 +171,7 @@ void init_torus()
   
   double Amin, Amax, cutoff_frac = 0.01;
 
-  double bphiang = 0.5 ; // Bphi / Bp 
+  double bsq_max3[1], betas[2];
   
   /* some physics parameters */
   gam = 5./3. ;
@@ -184,6 +184,7 @@ void init_torus()
 
   kappa =1.e-3;
   beta = 100. ;
+  betaphi = 100. ;
 
   /* some numerical parameters */
   lim = MC ;
@@ -423,7 +424,11 @@ void init_torus()
   //exchange the info between the MPI processes to get the true max/min
   MPI_Allreduce(MPI_IN_PLACE,&routfish,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
   MPI_Allreduce(MPI_IN_PLACE,&rinfish,1,MPI_DOUBLE,MPI_MIN,MPI_COMM_WORLD);
+  MPI_Allreduce(MPI_IN_PLACE,&th1fish,1,MPI_DOUBLE,MPI_MIN,MPI_COMM_WORLD);
+  MPI_Allreduce(MPI_IN_PLACE,&th2fish,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
 #endif
+  fprintf(stderr, "th1,2: %g, %g\n", th1fish, th2fish);
+ 
   umax /= rhomax ;
   kappa *= pow(rhomax,gam-1);
   global_kappa = kappa;
@@ -461,7 +466,7 @@ void init_torus()
 	//	fprintf(stderr, "Nloops = %d\n", nloops);
 	rnorm = (r/rinfish-1.) / (routfish/rinfish -1. );
 	thnorm = (th/th1fish-1.)/(th2fish/th1fish-1.);
-	modulator = cos(M_PI * rnorm*(double)nloopsx)*cos(thnorm*(double)nloopsy);
+	modulator = cos(M_PI * rnorm*(double)nloopsx) * cos(M_PI * thnorm*(double)nloopsy);
 	//	getchar();
       }
     else{
@@ -495,9 +500,9 @@ void init_torus()
 
   /* now differentiate to find cell-centered B,
      and begin normalization */
-  
-   bsq_max = compute_B_from_A(A, p, bphiang);
-
+    bsq_max = compute_B_from_A(A, p, betas);
+    fprintf(stderr,"initial beta: %g, %g\n",betas[0], betas[1]) ;
+    //  getchar();
   
   if(WHICHFIELD == NORMALFIELD) {
     if(MASTER==mpi_rank)
@@ -510,7 +515,7 @@ void init_torus()
       fprintf(stderr,"initial beta: %g (should be %g)\n",beta_act,beta) ;
     
     if(WHICH_FIELD_NORMALIZATION == NORMALIZE_FIELD_BY_BETAMIN) {
-      beta_act = normalize_B_by_beta(beta, p, 10*rmax, &norm);
+      beta_act = normalize_B_by_beta(beta, p, 10*rmax, &norm, betas);
     }
     else if(WHICH_FIELD_NORMALIZATION == NORMALIZE_FIELD_BY_MAX_RATIO) {
       beta_act = normalize_B_by_maxima_ratio(beta, p, &norm);
@@ -560,13 +565,13 @@ double compute_Amax( double (*A)[N2+D2][N3+D3] )
 
 
 //note that only axisymmetric A is supported
- double compute_B_from_A( double (*A)[N2+D2][N3+D3], double (*p)[N2M][N3M][NPR], double Bphiang)
+ double compute_B_from_A( double (*A)[N2+D2][N3+D3], double (*p)[N2M][N3M][NPR], double *betas)
 {
-  double bsq_max = 0., bsq_ij, b1, b2, b3norm;
+  double bsq_max = 0., bsq_ij, b1, b2, bsq_ij3, bsq_ij3max=0.;
+  double betap, betat, betap_min=1e10, betat_min=1e10;
+  double u_ij;
   int i, j, k;
   struct of_geom geom;
-
-  fprintf(stdout, "bphiang = %lf\n", Bphiang);
   
   ZLOOP {
     get_geometry(i,j,k,CENT,&geom) ;
@@ -576,21 +581,34 @@ double compute_Amax( double (*A)[N2+D2][N3+D3] )
                        + A[i+1][j][k] - A[i+1][j+1][k])/(2.*dx[2]*geom.g) ;
     b2 = (A[i][j][k] + A[i][j+1][k]
                       - A[i+1][j][k] - A[i+1][j+1][k])/(2.*dx[1]*geom.g) ;
-    p[i][j][k][B3] = b1;
-    b3norm = bsq_calc(p[i][j][k],&geom) ;
     p[i][j][k][B1] = b1 ;
-    p[i][j][k][B3] = 0.;
-    bsq_ij = bsq_calc(p[i][j][k],&geom) ;
     p[i][j][k][B2] = b2 ;
-    if(bsq_ij > 0.) p[i][j][k][B3] = b1 * sqrt(bsq_ij/b3norm) * Bphiang ; // normalized in a way to match Bphi^ / Br^ = Bphiang
-    bsq_ij = bsq_calc(p[i][j][k],&geom) ;
+    bsq_ij = bsq_calc(p[i][j][k],&geom) ; // poloidal field normalization
+    p[i][j][k][B3] = A[i][j][k] * sqrt(geom.gcon[3][3]);
+    bsq_ij3 = bsq_calc(p[i][j][k],&geom)-bsq_ij ; // toroidal field normalization
     if(bsq_ij > bsq_max) bsq_max = bsq_ij ;
+    if(bsq_ij3 > bsq_ij3max) bsq_ij3max = bsq_ij3 ;
+    u_ij = p[i][j][k][UU];
+    if(bsq_ij > 0.){
+      betap = (gam - 1.)*u_ij/(0.5*(bsq_ij+SMALL)) ;
+      if(betap_min > betap) betap_min = betap;
+    }
+    if(bsq_ij3 > 0.){
+      betat = (gam - 1.)*u_ij/(0.5*(bsq_ij3+SMALL)) ;
+      if(betat_min > betat) betat_min = betat;
+    }
+   
   }
 #ifdef MPI
   //exchange the info between the MPI processes to get the true max
   MPI_Allreduce(MPI_IN_PLACE,&bsq_max,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
+  MPI_Allreduce(MPI_IN_PLACE,&bsq_ij3max,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
+  MPI_Allreduce(MPI_IN_PLACE,&betap_min,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
+  MPI_Allreduce(MPI_IN_PLACE,&betat_min,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
 #endif
-
+  // *bsq_max3 = bsq_ij3max;
+  betas[0] = betap_min; betas[1] = betat_min;
+  
   return(bsq_max);
 }
 
@@ -642,40 +660,24 @@ double normalize_B_by_maxima_ratio(double beta_target, double (*p)[N2M][N3M][NPR
 }
 
 //normalize the magnetic field using the values inside r < rmax
-double normalize_B_by_beta(double beta_target, double (*p)[N2M][N3M][NPR], double rmax, double *norm_value)
+ double normalize_B_by_beta(double beta_target, double (*p)[N2M][N3M][NPR], double rmax, double *norm_value,
+			    double *betas)
 {
   double beta_min = 1e100, beta_ij, beta_act, bsq_ij, u_ij, umax = 0., bsq_max = 0.;
-  double norm;
+  double norm_p, norm_t;
   int i, j, k;
   struct of_geom geom;
   double X[NDIM], r, th, ph;
-  
-  ZLOOP {
-    coord(i, j, k, CENT, X);
-    bl_coord(X, &r, &th, &ph);
-    if (r>rmax) {
-      continue;
-    }
-    get_geometry(i,j,k,CENT,&geom) ;
-    bsq_ij = bsq_calc(p[i][j][k],&geom) ;
-    u_ij = p[i][j][k][UU];
-    beta_ij = (gam - 1.)*u_ij/(0.5*(bsq_ij+SMALL)) ;
-    if(beta_ij < beta_min) beta_min = beta_ij ;
-  }
-#ifdef MPI
-  //exchange the info between the MPI processes to get the true max
-  MPI_Allreduce(MPI_IN_PLACE,&beta_min,1,MPI_DOUBLE,MPI_MIN,MPI_COMM_WORLD);
-#endif
-  
+    
   /* finally, normalize to set field strength */
-  beta_act = beta_min;
   
-  norm = sqrt(beta_act/beta_target) ;
+  norm_p = sqrt(betas[0]/beta_target) ; // poloidal normalization
+  norm_t = sqrt(betas[1]/beta_target) ; // toroidal
   beta_min = 1e100;
   ZLOOP {
-    p[i][j][k][B1] *= norm ;
-    p[i][j][k][B2] *= norm ;
-    p[i][j][k][B3] *= norm ;
+    p[i][j][k][B1] *= norm_p ;
+    p[i][j][k][B2] *= norm_p ;
+    p[i][j][k][B3] *= norm_t ;
     get_geometry(i,j,k,CENT,&geom) ;
     bsq_ij = bsq_calc(p[i][j][k],&geom) ;
     u_ij = p[i][j][k][UU];
@@ -690,7 +692,7 @@ double normalize_B_by_beta(double beta_target, double (*p)[N2M][N3M][NPR], doubl
   beta_act = beta_min;
 
   if(norm_value) {
-    *norm_value = norm;
+    *norm_value = norm_p;
   }
 
   return(beta_act);
