@@ -60,7 +60,7 @@ void coord_transform(double *pr,int i, int j,int k) ;
 double compute_Amax( double (*A)[N2+D2][N3+D3] );
 double compute_B_from_A( double (*A)[N2+D2][N3+D3], double (*p)[N2M][N3M][NPR], double *betas);
 double normalize_B_by_maxima_ratio(double beta_target, double (*p)[N2M][N3M][NPR], double *norm_value);
-double normalize_B_by_beta(double beta_target, double (*p)[N2M][N3M][NPR], double rmax, double *norm_value, double *betas);
+double normalize_B_by_beta(double beta_target, double (*p)[N2M][N3M][NPR], double rmax, double *norm_value, double *betas, double helicity);
 double aphiloop(double varpi, double z, double varpi0, double z0);
 // calculates Keplerian rotation profile (correct results in the eqplane only!)
 void Keplercalc(double *ucon, double *ucov, int ii, int jj, int kk);
@@ -515,7 +515,7 @@ void init_torus()
       fprintf(stderr,"initial beta: %g (should be %g)\n",beta_act,beta) ;
     
     if(WHICH_FIELD_NORMALIZATION == NORMALIZE_FIELD_BY_BETAMIN) {
-      beta_act = normalize_B_by_beta(beta, p, 10*rmax, &norm, betas);
+      beta_act = normalize_B_by_beta(beta, p, 10*rmax, &norm, betas, betaphi/beta);
     }
     else if(WHICH_FIELD_NORMALIZATION == NORMALIZE_FIELD_BY_MAX_RATIO) {
       beta_act = normalize_B_by_maxima_ratio(beta, p, &norm);
@@ -661,7 +661,7 @@ double normalize_B_by_maxima_ratio(double beta_target, double (*p)[N2M][N3M][NPR
 
 //normalize the magnetic field using the values inside r < rmax
  double normalize_B_by_beta(double beta_target, double (*p)[N2M][N3M][NPR], double rmax, double *norm_value,
-			    double *betas)
+			    double *betas, double helicity)
 {
   double beta_min = 1e100, beta_ij, beta_act, bsq_ij, u_ij, umax = 0., bsq_max = 0.;
   double norm_p, norm_t;
@@ -677,7 +677,7 @@ double normalize_B_by_maxima_ratio(double beta_target, double (*p)[N2M][N3M][NPR
   ZLOOP {
     p[i][j][k][B1] *= norm_p ;
     p[i][j][k][B2] *= norm_p ;
-    p[i][j][k][B3] *= norm_t ;
+    p[i][j][k][B3] *= norm_t * helicity;
     get_geometry(i,j,k,CENT,&geom) ;
     bsq_ij = bsq_calc(p[i][j][k],&geom) ;
     u_ij = p[i][j][k][UU];
