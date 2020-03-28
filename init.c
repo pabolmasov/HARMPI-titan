@@ -148,7 +148,7 @@ void init_torus()
   double l,rin,lnh,expm2chi,up1 ;
   double DD,AA,SS,thin,sthin,cthin,DDin,AAin,SSin ;
   double kappa,hm1 ;
-  double routfish, rinfish ;
+  double routfish, rinfish, th1fish, th2fish;
 
   /* for magnetic field */
   double A[N1+D1][N2+D2][N3+D3] ;
@@ -159,9 +159,8 @@ void init_torus()
   /* Keplerian velocity field: */
   double ucontmp[4], ucovtmp[4];
   
-  int nloops=5; /* number of loops; nloops=0 reproduces the default behaviour  */
+  int nloopsx=1, nloopsy=1; /* number of loops; nloops=0 reproduces the default behaviour  */
   double rnorm, modulator;
-  int evenloops=0;
   int kloop;
   double zloop, rloop, aplus;
   double rhor; 
@@ -171,6 +170,8 @@ void init_torus()
   double amax, aphipow;
   
   double Amin, Amax, cutoff_frac = 0.01;
+
+  double bphiang = 0.5 ; // Bphi / Bp 
   
   /* some physics parameters */
   gam = 5./3. ;
@@ -182,7 +183,7 @@ void init_torus()
   l = lfish_calc(rmax) ;
 
   kappa =1.e-3;
-  beta = 10000. ;
+  beta = 100. ;
 
   /* some numerical parameters */
   lim = MC ;
@@ -199,7 +200,7 @@ void init_torus()
 
 
   t = 0. ;
-  hslope = 0.3 ;
+  hslope = 0.6 ;
 
   if(N2!=1) {
     //2D problem, use full pi-wedge in theta
@@ -247,7 +248,7 @@ void init_torus()
       }
     }
     else {
-      fprintf(stderr, "\n");
+      fprintf(stderr, "rbr = %g\n", &rbr);
     }
   }
 
@@ -402,7 +403,8 @@ void init_torus()
   MPI_Allreduce(MPI_IN_PLACE,&umax,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
 #endif
 
-  routfish = 0.; rinfish = Rout ; 
+  routfish = 0.; rinfish = Rout ;
+  th1fish = M_PI ; th2fish = 0.; 
   /* Normalize the densities so that max(rho) = 1 */
   if(MASTER==mpi_rank) fprintf(stderr,"rhomax: %g\n",rhomax) ;
   ZSLOOP(0,N1-1,0,N2-1,0,N3-1) {
@@ -413,6 +415,8 @@ void init_torus()
 	      get_phys_coord(i,j,k,&r,&th,&phi) ;
 	      if(r > routfish) routfish = r; // maximal radius in the torus
 	      if(r < rinfish) rinfish = r; // maximal radius in the torus
+	      if(th > th2fish) th2fish = th; // maximal radius in the torus
+	      if(th < th1fish) th1fish = th; // maximal radius in the torus
 	    }
   }
 #ifdef MPI
@@ -452,16 +456,17 @@ void init_torus()
     if (WHICHFIELD == NORMALFIELD) {
       q -= rhocutoff;
     }
-    if(nloops >=1)
+    if((nloopsx>=1) | (nloopsy>=1))
       {
 	//	fprintf(stderr, "Nloops = %d\n", nloops);
 	rnorm = (r/rinfish-1.) / (routfish/rinfish -1. );
-	modulator = sin(M_PI * rnorm*(double)nloops);
+	modulator = cos(M_PI * rnorm*(double)nloopsx)*cos(thnorm*(double)nloopsy);
 	//	getchar();
       }
     else{
       modulator = 1.;
     }
+    if(qpole) modulator *= cos(th) ;
     if(q > 0.) A[i][j][k] = q * modulator ;
   }
 
@@ -490,7 +495,8 @@ void init_torus()
   /* now differentiate to find cell-centered B,
      and begin normalization */
   
-  bsq_max = compute_B_from_A(A,p);
+    bsq_max = compute_B_from_A(A,p, Bphiang);
+
   
   if(WHICHFIELD == NORMALFIELD) {
     if(MASTER==mpi_rank)
@@ -553,7 +559,7 @@ double compute_Amax( double (*A)[N2+D2][N3+D3] )
 
 
 //note that only axisymmetric A is supported
-double compute_B_from_A( double (*A)[N2+D2][N3+D3], double (*p)[N2M][N3M][NPR] )
+ double compute_B_from_A( double (*A)[N2+D2][N3+D3], double (*p)[N2M][N3M][NPR] , double Bphiang)
 {
   double bsq_max = 0., bsq_ij ;
   int i, j, k;
@@ -568,7 +574,7 @@ double compute_B_from_A( double (*A)[N2+D2][N3+D3], double (*p)[N2M][N3M][NPR] )
     p[i][j][k][B2] = (A[i][j][k] + A[i][j+1][k]
                       - A[i+1][j][k] - A[i+1][j+1][k])/(2.*dx[1]*geom.g) ;
     
-    p[i][j][k][B3] = 0. ;
+    p[i][j][k][B3] =  p[i][j][k][B1] * sqrt(geom.gdd[1][1]*geom.guu[3][3]) * Bphiang ;
     
     bsq_ij = bsq_calc(p[i][j][k],&geom) ;
     if(bsq_ij > bsq_max) bsq_max = bsq_ij ;
@@ -721,7 +727,7 @@ void init_bondi()
 	rhor = (1. + sqrt(1. - a*a)) ;
 	R0 = -2*rhor ;
         Rin = 0.5*rhor ;
-        Rout = 1e3 ;
+        Rout = 0.5e3 ;
         rbr = Rout*10.;
         npow2=4.0; //power exponent
         cpow2=1.0; //exponent prefactor (the larger it is, the more hyperexponentiation is)
@@ -826,9 +832,9 @@ void init_bondi()
 		p[i][j][k][B1] = 0. ;
 		p[i][j][k][B2] = 0. ;
 		p[i][j][k][B3] = 0. ;
-		p[i][j][k][OR] = rho * r ; 
-		p[i][j][k][OH] = rho * th ; 
-		p[i][j][k][OP] = rho * phi; 
+		p[i][j][k][OR] = r ; 
+		p[i][j][k][OH] = th ; 
+		p[i][j][k][OP] = phi; 
 
 	}
 
@@ -1322,8 +1328,10 @@ void init_sndwave()
   
   
 }
+
 void init_vtest()
 {
+  /* constant-velocity, constant-density test */
   int i,j,k ;
   double x,y,z,sth,cth ;
   double ur,uh,up,u,rho ;
@@ -1332,7 +1340,7 @@ void init_vtest()
   
   double myrho, myu, mycs, myv;
   double delta_rho, delta_ampl=.001;
-  double V0 =1.;  
+  double V0 =-1.;  
   
   /* some physical parameters */
   gam = 5./3. ;
@@ -1367,7 +1375,7 @@ void init_vtest()
   
   /* output choices */
   
-  tf = 1./V0;
+  tf = 1./fabs(V0);
   
   DTd = tf/10. ;	/* dumping frequency, in units of M */
   DTl = tf/10. ;	/* logfile frequency, in units of M */
@@ -1390,7 +1398,7 @@ void init_vtest()
     
     gausshape =  exp(-(x-0.5)*(x-0.5)*40.) ; 
     delta_rho = delta_ampl * myrho * gausshape;
-    p[i][j][k][RHO] = myrho ; //+delta_rho ;
+    p[i][j][k][RHO] = myrho+delta_rho ;
     p[i][j][k][UU] = myu ;
     p[i][j][k][U1] = V0;
     p[i][j][k][U2] = 0.;
