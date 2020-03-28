@@ -58,7 +58,7 @@
 
 void coord_transform(double *pr,int i, int j,int k) ;
 double compute_Amax( double (*A)[N2+D2][N3+D3] );
-double compute_B_from_A( double (*A)[N2+D2][N3+D3], double (*p)[N2M][N3M][NPR] );
+double compute_B_from_A( double (*A)[N2+D2][N3+D3], double (*p)[N2M][N3M][NPR], double Bphiang);
 double normalize_B_by_maxima_ratio(double beta_target, double (*p)[N2M][N3M][NPR], double *norm_value);
 double normalize_B_by_beta(double beta_target, double (*p)[N2M][N3M][NPR], double rmax, double *norm_value);
 double aphiloop(double varpi, double z, double varpi0, double z0);
@@ -160,7 +160,7 @@ void init_torus()
   double ucontmp[4], ucovtmp[4];
   
   int nloopsx=1, nloopsy=1; /* number of loops; nloops=0 reproduces the default behaviour  */
-  double rnorm, modulator;
+  double rnorm, thnorm, modulator;
   int kloop;
   double zloop, rloop, aplus;
   double rhor; 
@@ -460,13 +460,14 @@ void init_torus()
       {
 	//	fprintf(stderr, "Nloops = %d\n", nloops);
 	rnorm = (r/rinfish-1.) / (routfish/rinfish -1. );
+	thnorm = (th/th1fish-1.)/(th2fish/th1fish-1.);
 	modulator = cos(M_PI * rnorm*(double)nloopsx)*cos(thnorm*(double)nloopsy);
 	//	getchar();
       }
     else{
       modulator = 1.;
     }
-    if(qpole) modulator *= cos(th) ;
+    //    if(qpole) modulator *= cos(th) ;
     if(q > 0.) A[i][j][k] = q * modulator ;
   }
 
@@ -495,7 +496,7 @@ void init_torus()
   /* now differentiate to find cell-centered B,
      and begin normalization */
   
-    bsq_max = compute_B_from_A(A,p, Bphiang);
+    bsq_max = compute_B_from_A(A,p, bphiang);
 
   
   if(WHICHFIELD == NORMALFIELD) {
@@ -574,7 +575,7 @@ double compute_Amax( double (*A)[N2+D2][N3+D3] )
     p[i][j][k][B2] = (A[i][j][k] + A[i][j+1][k]
                       - A[i+1][j][k] - A[i+1][j+1][k])/(2.*dx[1]*geom.g) ;
     
-    p[i][j][k][B3] =  p[i][j][k][B1] * sqrt(geom.gdd[1][1]*geom.guu[3][3]) * Bphiang ;
+    p[i][j][k][B3] =  p[i][j][k][B1] * sqrt(geom.gcon[1][1]*geom.gcov[3][3]) * Bphiang ;
     
     bsq_ij = bsq_calc(p[i][j][k],&geom) ;
     if(bsq_ij > bsq_max) bsq_max = bsq_ij ;
