@@ -496,7 +496,7 @@ void init_torus()
   /* now differentiate to find cell-centered B,
      and begin normalization */
   
-    bsq_max = compute_B_from_A(A,p, bphiang);
+   bsq_max = compute_B_from_A(A, p, bphiang);
 
   
   if(WHICHFIELD == NORMALFIELD) {
@@ -560,23 +560,29 @@ double compute_Amax( double (*A)[N2+D2][N3+D3] )
 
 
 //note that only axisymmetric A is supported
- double compute_B_from_A( double (*A)[N2+D2][N3+D3], double (*p)[N2M][N3M][NPR] , double Bphiang)
+ double compute_B_from_A( double (*A)[N2+D2][N3+D3], double (*p)[N2M][N3M][NPR], double Bphiang)
 {
-  double bsq_max = 0., bsq_ij ;
+  double bsq_max = 0., bsq_ij, b1, b2, b3norm;
   int i, j, k;
   struct of_geom geom;
+
+  fprintf(stdout, "bphiang = %lf\n", Bphiang);
   
   ZLOOP {
     get_geometry(i,j,k,CENT,&geom) ;
     
     /* flux-ct */
-    p[i][j][k][B1] = -(A[i][j][k] - A[i][j+1][k]
+    b1 = -(A[i][j][k] - A[i][j+1][k]
                        + A[i+1][j][k] - A[i+1][j+1][k])/(2.*dx[2]*geom.g) ;
-    p[i][j][k][B2] = (A[i][j][k] + A[i][j+1][k]
+    b2 = (A[i][j][k] + A[i][j+1][k]
                       - A[i+1][j][k] - A[i+1][j+1][k])/(2.*dx[1]*geom.g) ;
-    
-    p[i][j][k][B3] =  p[i][j][k][B1] * sqrt(geom.gcon[1][1]*geom.gcov[3][3]) * Bphiang ;
-    
+    p[i][j][k][B3] = b1;
+    b3norm = bsq_calc(p[i][j][k],&geom) ;
+    p[i][j][k][B1] = b1 ;
+    p[i][j][k][B3] = 0.;
+    bsq_ij = bsq_calc(p[i][j][k],&geom) ;
+    p[i][j][k][B2] = b2 ;
+    if(bsq_ij > 0.) p[i][j][k][B3] = b1 * sqrt(bsq_ij/b3norm) * Bphiang ; // normalized in a way to match Bphi^ / Br^ = Bphiang
     bsq_ij = bsq_calc(p[i][j][k],&geom) ;
     if(bsq_ij > bsq_max) bsq_max = bsq_ij ;
   }
@@ -616,6 +622,7 @@ double normalize_B_by_maxima_ratio(double beta_target, double (*p)[N2M][N3M][NPR
   ZLOOP {
     p[i][j][k][B1] *= norm ;
     p[i][j][k][B2] *= norm ;
+    p[i][j][k][B3] *= norm ;
     
     get_geometry(i,j,k,CENT,&geom) ;
     bsq_ij = bsq_calc(p[i][j][k],&geom) ;
